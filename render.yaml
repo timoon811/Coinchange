@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: coinchange-app
+    env: node
+    repo: https://github.com/timoon811/Coinchange.git
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    plan: starter
+    region: oregon
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: postgresql://coinchange_database_user:hG4cfs9xFY1dzFyZdXLu3x1jESDm2W9F@dpg-d362v9umcj7s73act8b0-a/coinchange_database
+      - key: JWT_SECRET
+        value: 2d608b4af4a17f12351725c2c1cec50545961ff3ed135bd8be771979a87684d4d3c0e4e1c467ab49a594f1685fbb294fcd43bd92d8ebc801d03206ab90c43006
+      - key: ENCRYPTION_KEY
+        value: 53bbf8ba7f943856c5276e6575082dad5ef307c6cfd4e24b9c9e0add9c262d6e
+      - key: NEXTAUTH_URL
+        value: https://coinchange-app.onrender.com
+      - key: NEXTAUTH_SECRET
+        value: 2d608b4af4a17f12351725c2c1cec50545961ff3ed135bd8be771979a87684d4d3c0e4e1c467ab49a594f1685fbb294fcd43bd92d8ebc801d03206ab90c43006
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
+
+databases:
+  - name: coinchange-database
+    plan: free
+    region: oregon
