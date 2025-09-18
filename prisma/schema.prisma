@@ -1,0 +1,737 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Перечисление ролей пользователей
+enum UserRole {
+  ADMIN
+  CASHIER
+}
+
+// Перечисление статусов заявок
+enum RequestStatus {
+  NEW             // Новая заявка из Telegram
+  ASSIGNED        // Назначен кассир/офис
+  AWAITING_CLIENT // Ожидание шагов клиента
+  IN_PROGRESS     // Основные действия
+  AWAITING_CONFIRMATION // Ожидание подтверждения
+  COMPLETED       // Завершена
+  CANCELED        // Отменена
+  REJECTED        // Отказана
+}
+
+// Направления операций
+enum OperationDirection {
+  CRYPTO_TO_CASH
+  CASH_TO_CRYPTO
+  CARD_TO_CRYPTO
+  CRYPTO_TO_CARD
+  CARD_TO_CASH
+  CASH_TO_CARD
+}
+
+// Сети для криптовалют
+enum NetworkType {
+  ETH
+  TRON
+  BSC
+  TON
+  SOL
+  BTC
+  POLYGON
+  AVALANCHE
+}
+
+// Типы вложений
+enum AttachmentType {
+  RECEIPT
+  SCREENSHOT
+  DOCUMENT
+  OTHER
+}
+
+// Типы уведомлений
+enum NotificationType {
+  NEW_REQUEST
+  SLA_OVERDUE
+  STATUS_CHANGE
+  ASSIGNMENT
+  SYSTEM
+  RATE_UPDATE_NEEDED    // Нужно обновить курсы валют
+  LOW_BALANCE          // Низкий баланс счета
+  HIGH_BALANCE         // Превышен максимальный баланс
+  DEPOSIT_EXPIRING     // Истекает депозит
+}
+
+// Пользователи системы
+model User {
+  id            String   @id @default(cuid())
+  username      String   @unique
+  email         String?  @unique
+  firstName     String
+  lastName      String?
+  password      String   // Хэшированный пароль
+  role          UserRole @default(CASHIER)
+  isActive      Boolean  @default(true)
+  officeIds     String[] // IDs офисов, к которым имеет доступ кассир
+
+  // Настройки уведомлений
+  notificationPrefs Json?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Связи
+  assignedRequests Request[] @relation("RequestAssignee")
+  createdComments  Comment[]
+  auditLogs        AuditLog[]
+  notifications    Notification[]
+  exchangeRates    ExchangeRate[] @relation("ExchangeRateSetter")
+  operations       Operation[] @relation("OperationPerformer")
+
+  @@map("users")
+}
+
+// Офисы/локации
+model Office {
+  id              String   @id @default(cuid())
+  name            String
+  city            String
+  address         String
+  phone           String?
+  email           String?
+
+  // Расписание работы
+  schedule        Json?    // {"monday": {"open": "09:00", "close": "18:00"}}
+
+  // Доступные валюты и сети
+  activeCurrencies String[]
+  activeNetworks   String[]
+
+  // Лимиты
+  dailyLimits      Json?    // {"USDT": 10000, "BTC": 1}
+
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Связи
+  requests         Request[]
+  accounts         Account[]
+  operations       Operation[]
+  deposits         Deposit[]
+
+  @@map("offices")
+}
+
+// Клиенты из Telegram
+model Client {
+  id                String   @id @default(cuid())
+  telegramUserId    String   @unique
+  username          String?
+  firstName         String?
+  lastName          String?
+  phone             String?
+  languageCode      String?
+
+  // Метки и заметки
+  tags              String[]
+  notes             String?
+
+  // Статистика
+  totalRequests     Int      @default(0)
+  totalVolume       Decimal? @db.Decimal(20, 8)
+  lastContactDate   DateTime? // Дата последнего обращения
+  
+  // Настройки курсов для клиента
+  customRateMargin  Decimal? @db.Decimal(5, 2) // Индивидуальная маржа (например, 0.5%, 1.5%)
+
+  isBlocked         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Связи
+  requests          Request[]
+  deposits          Deposit[]
+  operations        Operation[]
+
+  @@map("clients")
+}
+
+// Заявки на обмен
+model Request {
+  id                String           @id @default(cuid())
+  requestId         String           @unique // tg-<timestamp>-<rand>
+  clientId          String
+  officeId          String?
+  assignedUserId    String?
+
+  // Основная информация
+  direction         OperationDirection
+  status            RequestStatus     @default(NEW)
+  source            String           @default("telegram") // telegram, manual
+  locale            String           @default("ru")
+
+  // Временные метки
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  assignedAt        DateTime?
+  completedAt       DateTime?
+
+  // SLA информация
+  slaDeadline       DateTime?
+  isOverdue         Boolean          @default(false)
+
+  // Связи
+  client            Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  office            Office?          @relation(fields: [officeId], references: [id])
+  assignedUser      User?            @relation("RequestAssignee", fields: [assignedUserId], references: [id])
+  finance           RequestFinance?
+  requisites        Requisites?
+  attachments       Attachment[]
+  comments          Comment[]
+  operations        Operation[]
+
+  @@map("requests")
+}
+
+// Финансовая информация заявки
+model RequestFinance {
+  id                    String   @id @default(cuid())
+  requestId             String   @unique
+
+  // Валюты и суммы
+  fromCurrency          String
+  fromNetwork           NetworkType?
+  toCurrency            String
+
+  expectedAmountFrom    Decimal  @db.Decimal(20, 8)
+  expectedAmountTo      Decimal? @db.Decimal(20, 8)
+  actualAmountFrom      Decimal? @db.Decimal(20, 8)
+  actualAmountTo        Decimal? @db.Decimal(20, 8)
+
+  // Курс и комиссия
+  rateLocked            Boolean  @default(false)
+  rateLockedUntil       DateTime?
+  rateValue             Decimal? @db.Decimal(20, 8)
+  commissionPercent     Decimal? @db.Decimal(5, 2)
+  commissionFixed       Decimal? @db.Decimal(20, 8)
+  totalToIssue          Decimal? @db.Decimal(20, 8)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Связи
+  request               Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("request_finance")
+}
+
+// Реквизиты (кошельки, карты)
+model Requisites {
+  id              String   @id @default(cuid())
+  requestId       String   @unique
+
+  // Зашифрованные данные
+  walletAddress   String?  // Зашифровано
+  cardNumber      String?  // Зашифровано (только последние 4 цифры)
+  cardMasked      String?  // Маскированная версия для отображения
+  bankName        String?
+  extraData       Json?    // Дополнительные данные в JSON
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Связи
+  request         Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("requisites")
+}
+
+// Вложения (чеки, скриншоты)
+model Attachment {
+  id          String          @id @default(cuid())
+  requestId   String
+
+  filename    String
+  originalName String
+  fileUrl     String          // URL в S3 или локальном хранилище
+  fileSize    Int
+  mimeType    String
+  type        AttachmentType  @default(OTHER)
+
+  uploadedBy  String          // ID пользователя
+  createdAt   DateTime        @default(now())
+
+  // Связи
+  request     Request         @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+// Комментарии к заявкам
+model Comment {
+  id          String   @id @default(cuid())
+  requestId   String
+  authorId    String
+
+  text        String
+  isInternal  Boolean  @default(false) // Виден только сотрудникам
+  isPinned    Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Связи
+  request     Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author      User     @relation(fields: [authorId], references: [id])
+
+  @@map("comments")
+}
+
+// Правила курсов
+model RatesRule {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+
+  // Область применения
+  scope       String   // global, office, client, direction, amount_range
+
+  // Условия применения
+  conditions  Json?    // {"direction": "CRYPTO_TO_CASH", "minAmount": 100}
+
+  // Формула расчета
+  formula     Json     // {"type": "fixed", "value": 1.05} или {"type": "expression", "expression": "market * 1.02"}
+
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0) // Приоритет применения
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("rates_rules")
+}
+
+// Правила комиссий
+model CommissionRule {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+
+  // Область применения
+  scope       String   // global, office, client, direction, amount_range
+
+  // Условия применения
+  conditions  Json?    // {"direction": "CRYPTO_TO_CASH", "minAmount": 100}
+
+  // Комиссия
+  percent     Decimal? @db.Decimal(5, 2)
+  fixed       Decimal? @db.Decimal(20, 8)
+
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("commission_rules")
+}
+
+// Лимиты
+model Limit {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+
+  // Область применения
+  scope       String   // global, office, user, currency
+
+  // Параметры лимита
+  currency    String?
+  network     NetworkType?
+
+  dailyLimit  Decimal? @db.Decimal(20, 8)
+  perTxMin    Decimal? @db.Decimal(20, 8)
+  perTxMax    Decimal? @db.Decimal(20, 8)
+
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("limits")
+}
+
+// Логи аудита
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String   // Кто совершил действие
+
+  entityType  String   // request, user, office, etc.
+  entityId    String   // ID сущности
+  action      String   // create, update, delete, status_change, etc.
+
+  oldValues   Json?    // Старые значения
+  newValues   Json?    // Новые значения
+
+  ipAddress   String?
+  userAgent   String?
+
+  createdAt   DateTime @default(now())
+
+  // Связи
+  actor       User     @relation(fields: [actorId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// Уведомления
+model Notification {
+  id          String            @id @default(cuid())
+  userId      String
+  type        NotificationType
+
+  title       String
+  message     String
+  payload     Json?             // Дополнительные данные
+
+  isRead      Boolean           @default(false)
+  readAt      DateTime?
+
+  createdAt   DateTime          @default(now())
+
+  // Связи
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// Перечисления для системы учета
+enum CurrencyType {
+  CRYPTO
+  FIAT
+  CASH
+}
+
+enum AccountType {
+  CASH        // Наличка
+  CRYPTO      // Криптовалютный счет
+  BANK        // Банковский счет
+  CARD        // Карточный счет
+}
+
+enum OperationType {
+  EXCHANGE    // Обмен
+  DEPOSIT     // Ввод
+  WITHDRAWAL  // Вывод
+  TRANSFER    // Перевод
+  ADJUSTMENT  // Корректировка
+}
+
+enum DepositType {
+  OWNER      // Депозит собственника
+  CLIENT     // Депозит клиента
+}
+
+// Валюты
+model Currency {
+  id              String       @id @default(cuid())
+  code            String       @unique // USDT, BTC, USD, TRY и т.д.
+  name            String       // Полное название
+  symbol          String?      // Символ валюты
+  type            CurrencyType
+  
+  // Настройки отображения
+  decimals        Int          @default(8)
+  
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Связи
+  accounts        Account[]
+  exchangeRates   ExchangeRate[]
+  operations      Operation[]
+  deposits        Deposit[]
+
+  @@map("currencies")
+}
+
+// Счета офисов (сейфы)
+model Account {
+  id              String       @id @default(cuid())
+  officeId        String
+  currencyId      String
+  type            AccountType
+  
+  name            String       // Название счета (например, "Основная касса USDT")
+  description     String?
+  
+  // Баланс
+  balance         Decimal      @default(0) @db.Decimal(20, 8)
+  initialBalance  Decimal      @default(0) @db.Decimal(20, 8)
+  
+  // Дополнительные настройки
+  minBalance      Decimal?     @db.Decimal(20, 8) // Минимальный остаток
+  maxBalance      Decimal?     @db.Decimal(20, 8) // Максимальный остаток
+  
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Связи
+  office          Office       @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  currency        Currency     @relation(fields: [currencyId], references: [id])
+  operationsFrom  Operation[]  @relation("OperationFromAccount")
+  operationsTo    Operation[]  @relation("OperationToAccount")
+
+  @@unique([officeId, currencyId, type])
+  @@map("accounts")
+}
+
+// Курсы валют
+model ExchangeRate {
+  id              String       @id @default(cuid())
+  currencyId      String       // Валюта
+  baseCurrencyId  String?      // Базовая валюта (например, USD)
+  
+  // Курс закупки
+  purchaseRate    Decimal      @db.Decimal(20, 8)
+  
+  // Курс продажи (автоматически рассчитывается с маржой)
+  sellRate       Decimal      @db.Decimal(20, 8)
+  
+  // Маржа по умолчанию
+  defaultMargin   Decimal      @default(1.0) @db.Decimal(5, 2) // В процентах
+  
+  // Дата курса
+  rateDate        DateTime     @default(now()) @db.Date
+  
+  // Кто установил курс
+  setBy           String       // ID пользователя
+  
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Связи
+  currency        Currency     @relation(fields: [currencyId], references: [id])
+  setter          User         @relation("ExchangeRateSetter", fields: [setBy], references: [id])
+
+  @@unique([currencyId, rateDate])
+  @@map("exchange_rates")
+}
+
+// Операции
+model Operation {
+  id              String       @id @default(cuid())
+  officeId        String
+  type            OperationType
+  
+  // Счета
+  fromAccountId   String?      // Счет списания
+  toAccountId     String?      // Счет зачисления
+  
+  // Суммы
+  amount          Decimal      @db.Decimal(20, 8)
+  currencyId      String
+  
+  // Курс операции
+  exchangeRate    Decimal?     @db.Decimal(20, 8)
+  
+  // Связанная заявка (если операция из заявки)
+  requestId       String?
+  
+  // Клиент (если операция связана с клиентом)
+  clientId        String?
+  
+  // Статья доходов/расходов
+  categoryId      String?
+  
+  description     String?
+  notes           String?
+  
+  // Кто провел операцию
+  performedBy     String
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Связи
+  office          Office       @relation(fields: [officeId], references: [id])
+  fromAccount     Account?     @relation("OperationFromAccount", fields: [fromAccountId], references: [id])
+  toAccount       Account?     @relation("OperationToAccount", fields: [toAccountId], references: [id])
+  currency        Currency     @relation(fields: [currencyId], references: [id])
+  request         Request?     @relation(fields: [requestId], references: [id])
+  client          Client?      @relation(fields: [clientId], references: [id])
+  category        OperationCategory? @relation(fields: [categoryId], references: [id])
+  performer       User         @relation("OperationPerformer", fields: [performedBy], references: [id])
+
+  @@map("operations")
+}
+
+// Статьи доходов и расходов
+model OperationCategory {
+  id              String       @id @default(cuid())
+  name            String
+  description     String?
+  type            String       // income, expense
+  
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Связи
+  operations      Operation[]
+
+  @@map("operation_categories")
+}
+
+// Депозиты
+model Deposit {
+  id              String       @id @default(cuid())
+  type            DepositType
+  
+  // Клиент (для клиентских депозитов)
+  clientId        String?
+  
+  // Офис
+  officeId        String
+  
+  // Валюта и сумма
+  currencyId      String
+  amount          Decimal      @db.Decimal(20, 8)
+  
+  // Условия
+  interestRate    Decimal?     @db.Decimal(5, 2) // Процентная ставка
+  term            Int?         // Срок в днях
+  
+  // Даты
+  startDate       DateTime     @default(now())
+  endDate         DateTime?
+  
+  description     String?
+  notes           String?
+  
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Связи
+  client          Client?      @relation(fields: [clientId], references: [id])
+  office          Office       @relation(fields: [officeId], references: [id])
+  currency        Currency     @relation(fields: [currencyId], references: [id])
+
+  @@map("deposits")
+}
+
+// Перечисления для системы прав доступа
+enum PermissionType {
+  PAGE_ACCESS    // Доступ к странице
+  ACTION         // Действие (создание, редактирование, удаление)
+  FEATURE        // Функционал
+}
+
+enum ResourceType {
+  // Страницы
+  DASHBOARD
+  REQUESTS
+  CLIENTS
+  ACCOUNTING
+  ANALYTICS
+  REPORTS
+  SETTINGS
+  SLA
+  OFFICES
+  USERS
+  SYSTEM
+  
+  // Подстраницы бухгалтерии
+  ACCOUNTS
+  CURRENCIES
+  DEPOSITS
+  EXCHANGE_RATES
+  OPERATIONS
+  
+  // Действия
+  CREATE_REQUEST
+  EDIT_REQUEST
+  DELETE_REQUEST
+  ASSIGN_REQUEST
+  
+  CREATE_CLIENT
+  EDIT_CLIENT
+  DELETE_CLIENT
+  
+  CREATE_OPERATION
+  EDIT_OPERATION
+  DELETE_OPERATION
+  
+  CREATE_USER
+  EDIT_USER
+  DELETE_USER
+  
+  MANAGE_RATES
+  MANAGE_ACCOUNTS
+  MANAGE_OFFICES
+  
+  VIEW_REPORTS
+  EXPORT_REPORTS
+  
+  SYSTEM_SETTINGS
+  COMMISSION_RULES
+  
+  // Функционал
+  BULK_OPERATIONS
+  ADVANCED_SEARCH
+  AUDIT_LOGS
+}
+
+// Права доступа
+model Permission {
+  id            String         @id @default(cuid())
+  name          String         @unique
+  description   String?
+  type          PermissionType
+  resource      ResourceType
+  
+  // Дополнительные условия (например, только свои заявки)
+  conditions    Json?
+  
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Связи
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+// Связь между ролями и правами
+model RolePermission {
+  id           String     @id @default(cuid())
+  role         UserRole
+  permissionId String
+  
+  // Дополнительные ограничения для конкретной роли
+  restrictions Json?      // {"officeIds": ["office1"], "maxAmount": 1000}
+  
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Связи
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permissionId])
+  @@map("role_permissions")
+}
