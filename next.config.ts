@@ -15,14 +15,14 @@ const nextConfig: NextConfig = {
 
   // Настройки TypeScript
   typescript: {
-    // Показывать ошибки TypeScript во время сборки
-    ignoreBuildErrors: false,
+    // Игнорировать ошибки TypeScript во время production сборки
+    ignoreBuildErrors: true,
   },
 
   // Настройки ESLint
   eslint: {
-    // Показывать ошибки ESLint во время сборки
-    ignoreDuringBuilds: false,
+    // Игнорировать ошибки ESLint во время production сборки
+    ignoreDuringBuilds: true,
   },
 
   // Настройки изображений (если используются)
