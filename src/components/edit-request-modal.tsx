@@ -224,17 +224,17 @@ export function EditRequestModal({ requestId, open, onOpenChange, onRequestUpdat
       direction: formData.direction,
       finance: {
         fromCurrency: formData.fromCurrency,
-        toCurrency: formData.toCurrency,
+        toCurrency: formData.toCurrency || formData.fromCurrency, // fallback if toCurrency not selected
         expectedAmountFrom: parseFloat(formData.expectedAmountFrom),
         expectedAmountTo: formData.toCurrency ? parseFloat(formData.expectedAmountFrom) * (request.finance?.rateValue || 0.98) : undefined,
         rateValue: request.finance?.rateValue || 0.98,
         commissionPercent: request.finance?.commissionPercent || 2.0,
       },
-      requisites: {
+      requisites: formData.walletAddress || formData.cardNumber || formData.bankName ? {
         walletAddress: formData.walletAddress || undefined,
         cardNumber: formData.cardNumber || undefined,
         bankName: formData.bankName || undefined,
-      },
+      } : undefined,
     }
 
     const result = await updateRequest(`/api/requests/${request.id}`, {
@@ -358,23 +358,39 @@ export function EditRequestModal({ requestId, open, onOpenChange, onRequestUpdat
                     </Label>
                     <Select value={formData.clientId} onValueChange={(value) => updateField('clientId', value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Выберите клиента" />
+                        <SelectValue placeholder="Найдите и выберите клиента" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id}>
-                            <div className="flex items-center gap-2">
-                              <div>
-                                {client.firstName} {client.lastName}
+                      <SelectContent className="max-h-[200px]">
+                        {clients.length === 0 ? (
+                          <div className="p-2 text-sm text-muted-foreground">
+                            Клиенты не найдены
+                          </div>
+                        ) : (
+                          clients.map((client) => (
+                            <SelectItem key={client.id} value={client.id} className="flex flex-col items-start">
+                              <div className="flex items-center gap-2 w-full">
+                                <div className="flex-1">
+                                  <div className="font-medium">
+                                    {client.firstName} {client.lastName}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    @{client.username} {client.phone && `• ${client.phone}`}
+                                  </div>
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  ID: {client.id.slice(-6)}
+                                </Badge>
                               </div>
-                              <Badge variant="outline" className="text-xs">
-                                @{client.username}
-                              </Badge>
-                            </div>
-                          </SelectItem>
-                        ))}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
+                    {formData.clientId && (
+                      <div className="text-xs text-muted-foreground">
+                        Выбран: {clients.find(c => c.id === formData.clientId)?.firstName} {clients.find(c => c.id === formData.clientId)?.lastName}
+                      </div>
+                    )}
                   </div>
 
                   {user?.role === UserRole.ADMIN && (

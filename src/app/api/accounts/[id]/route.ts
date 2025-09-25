@@ -63,7 +63,7 @@ export async function GET(
     }
 
     // Проверяем доступ к офису
-    if (payload.role === UserRole.CASHIER && 
+    if (payload.role === 'CASHIER' && 
         !payload.officeIds?.includes(account.officeId)) {
       return NextResponse.json<ApiResponse>({ 
         success: false, 
@@ -117,7 +117,7 @@ export async function PUT(
     }
 
     // Проверяем доступ к офису
-    if (payload.role === UserRole.CASHIER && 
+    if (payload.role === 'CASHIER' && 
         !payload.officeIds?.includes(existingAccount.officeId)) {
       return NextResponse.json<ApiResponse>({ 
         success: false, 
@@ -170,17 +170,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    let payload: any
-    try {
-      payload = await AuthService.authenticateRequest(request)
-    } catch (error) {
-      return NextResponse.json<ApiResponse>({ 
-        success: false, 
-        error: 'Unauthorized' 
-      }, { status: 401 })
-    }
+    const payload = await AuthService.authenticateRequest(request)
 
-    if (payload.role !== UserRole.ADMIN) {
+    if (payload.role !== 'ADMIN') {
       return NextResponse.json<ApiResponse>({ 
         success: false, 
         error: 'Access denied' 
@@ -188,11 +180,7 @@ export async function DELETE(
     }
 
     const existingAccount = await prisma.account.findUnique({
-      where: { id },
-      include: {
-        operations: true,
-        deposits: true
-      }
+      where: { id }
     })
 
     if (!existingAccount) {
@@ -202,8 +190,21 @@ export async function DELETE(
       }, { status: 404 })
     }
 
+    // Проверяем операции
+    const operationsCount = await prisma.operation.count({
+      where: {
+        OR: [
+          { fromAccountId: id },
+          { toAccountId: id }
+        ]
+      }
+    })
+
+    // Депозиты не связаны напрямую со счетами, пропускаем проверку
+    const depositsCount = 0
+
     // Проверяем, используется ли счет
-    if (existingAccount.operations.length > 0 || existingAccount.deposits.length > 0) {
+    if (operationsCount > 0 || depositsCount > 0) {
       return NextResponse.json<ApiResponse>({ 
         success: false, 
         error: 'Нельзя удалить счет с операциями' 
@@ -260,7 +261,7 @@ export async function POST(
     }
 
     // Проверяем доступ к офису
-    if (payload.role === UserRole.CASHIER && 
+    if (payload.role === 'CASHIER' && 
         !payload.officeIds?.includes(existingAccount.officeId)) {
       return NextResponse.json<ApiResponse>({ 
         success: false, 

@@ -20,11 +20,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Crypto Exchange CRM",
-  description: "Внутренняя CRM система для обменного сервиса криптовалют",
+  title: "CryptoExchange - Обмен криптовалют",
+  description: "Быстрый и безопасный обмен криптовалют с лучшими курсами",
   icons: {
-    icon: '/icon.svg',
-    apple: '/icon.svg',
+    icon: '/favicon.ico',
+    apple: '/favicon.ico',
   },
 };
 

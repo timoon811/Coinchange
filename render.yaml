@@ -23,6 +23,8 @@ services:
         value: 2d608b4af4a17f12351725c2c1cec50545961ff3ed135bd8be771979a87684d4d3c0e4e1c467ab49a594f1685fbb294fcd43bd92d8ebc801d03206ab90c43006
       - key: NPM_CONFIG_PRODUCTION
         value: "false"
+      - key: ALLOWED_ORIGINS
+        value: https://coinchange-app.onrender.com
 
 databases:
   - name: coinchange-database

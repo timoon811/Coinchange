@@ -103,17 +103,17 @@ export default function NewRequestPage() {
       direction: formData.direction,
       finance: {
         fromCurrency: formData.fromCurrency,
-        toCurrency: formData.toCurrency,
+        toCurrency: formData.toCurrency || formData.fromCurrency, // fallback if toCurrency not selected
         expectedAmountFrom: parseFloat(formData.expectedAmountFrom),
         expectedAmountTo: formData.toCurrency ? parseFloat(formData.expectedAmountFrom) * 0.98 : undefined, // Примерный курс
         rateValue: 0.98,
         commissionPercent: 2.0,
       },
-      requisites: {
+      requisites: formData.walletAddress || formData.cardNumber || formData.bankName ? {
         walletAddress: formData.walletAddress || undefined,
         cardNumber: formData.cardNumber || undefined,
         bankName: formData.bankName || undefined,
-      },
+      } : undefined,
       comment: formData.comment || undefined,
     }
 
@@ -165,16 +165,34 @@ export default function NewRequestPage() {
                 <Label htmlFor="clientId">Клиент *</Label>
                 <Select value={formData.clientId} onValueChange={(value) => updateField('clientId', value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Выберите клиента" />
+                    <SelectValue placeholder="Найдите и выберите клиента" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.firstName} {client.lastName} (@{client.username})
-                      </SelectItem>
-                    ))}
+                  <SelectContent className="max-h-[200px]">
+                    {clients.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground">
+                        Клиенты не найдены
+                      </div>
+                    ) : (
+                      clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          <div className="flex flex-col items-start w-full">
+                            <div className="font-medium">
+                              {client.firstName} {client.lastName}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              @{client.username} {client.phone && `• ${client.phone}`}
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
+                {formData.clientId && (
+                  <div className="text-xs text-muted-foreground">
+                    Выбран: {clients.find(c => c.id === formData.clientId)?.firstName} {clients.find(c => c.id === formData.clientId)?.lastName}
+                  </div>
+                )}
               </div>
 
               {user?.role === 'ADMIN' && (

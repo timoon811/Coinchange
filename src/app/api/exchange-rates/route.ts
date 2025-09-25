@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<ApiResponse>({ 
         success: false, 
         error: 'Validation error',
-        message: error.errors.map(e => e.message).join(', ')
+        message: error.issues.map(e => e.message).join(', ')
       }, { status: 400 })
     }
 
@@ -275,7 +275,10 @@ export async function PUT(request: NextRequest) {
     // Проверяем существование всех валют
     const currencyIds = validatedRates.map(r => r.currencyId)
     const currencies = await prisma.currency.findMany({
-      where: { id: { in: currencyIds } }
+      where: { 
+        id: { in: currencyIds },
+        isActive: true
+      }
     })
 
     if (currencies.length !== currencyIds.length) {
@@ -374,7 +377,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json<ApiResponse>({ 
         success: false, 
         error: 'Validation error',
-        message: error.errors.map(e => e.message).join(', ')
+        message: error.issues.map(e => e.message).join(', ')
       }, { status: 400 })
     }
 

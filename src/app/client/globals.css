@@ -1,0 +1,370 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Предотвращение горизонтального скролла */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+  position: relative;
+}
+
+/* Обеспечение корректной работы на мобильных устройствах */
+* {
+  box-sizing: border-box;
+}
+
+/* Предотвращение переполнения контейнеров */
+.container, .max-w-*, .w-full {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Улучшенная адаптивность */
+.responsive-container {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  padding-left: clamp(0.5rem, 2.5vw, 2rem);
+  padding-right: clamp(0.5rem, 2.5vw, 2rem);
+}
+
+/* Адаптивные отступы */
+.responsive-padding {
+  padding: clamp(0.5rem, 2vw, 1.5rem);
+}
+
+/* Адаптивные промежутки */
+.responsive-gap {
+  gap: clamp(0.5rem, 2vw, 1.5rem);
+}
+
+:root {
+  --radius: 1rem;
+  --background: #fafafa;
+  --foreground: #1f2937;
+  --card: #ffffff;
+  --card-foreground: #1f2937;
+  --popover: #ffffff;
+  --popover-foreground: #1f2937;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #374151;
+  --muted: #f9fafb;
+  --muted-foreground: #6b7280;
+  --accent: #3b82f6;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --border: #e5e7eb;
+  --input: #f9fafb;
+  --ring: #3b82f6;
+  --chart-1: #3b82f6;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #8b5cf6;
+  --chart-5: #f97316;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #374151;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3f4f6;
+  --sidebar-accent-foreground: #374151;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #3b82f6;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --card: #1e293b;
+  --card-foreground: #f1f5f9;
+  --popover: #1e293b;
+  --popover-foreground: #f1f5f9;
+  --primary: #60a5fa;
+  --primary-foreground: #0f172a;
+  --secondary: #334155;
+  --secondary-foreground: #f1f5f9;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #60a5fa;
+  --accent-foreground: #0f172a;
+  --destructive: #ef4444;
+  --border: #334155;
+  --input: #1e293b;
+  --ring: #60a5fa;
+  --chart-1: #60a5fa;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #8b5cf6;
+  --chart-5: #f97316;
+  --sidebar: #1e293b;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #60a5fa;
+  --sidebar-primary-foreground: #0f172a;
+  --sidebar-accent: #334155;
+  --sidebar-accent-foreground: #f1f5f9;
+  --sidebar-border: #334155;
+  --sidebar-ring: #60a5fa;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  
+  /* Улучшенная типографика */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+  
+  h1 {
+    @apply text-4xl lg:text-5xl;
+  }
+  
+  h2 {
+    @apply text-3xl lg:text-4xl;
+  }
+  
+  h3 {
+    @apply text-2xl lg:text-3xl;
+  }
+  
+  h4 {
+    @apply text-xl lg:text-2xl;
+  }
+  
+  h5 {
+    @apply text-lg lg:text-xl;
+  }
+  
+  h6 {
+    @apply text-base lg:text-lg;
+  }
+  
+  /* Улучшенные карточки в стиле референса */
+  .card-modern {
+    @apply bg-card backdrop-blur-sm border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl;
+  }
+  
+  .card-modern:hover {
+    @apply border-primary/20 shadow-primary/10 transform scale-[1.02];
+  }
+  
+  .card-glass {
+    @apply bg-card/80 backdrop-blur-md border border-border/30 shadow-2xl rounded-3xl;
+  }
+  
+  /* Градиенты в стиле референса */
+  .gradient-primary {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  }
+  
+  .gradient-secondary {
+    background: linear-gradient(135deg, #10b981, #059669);
+  }
+  
+  .gradient-accent {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+  }
+  
+  .gradient-purple {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  }
+  
+  .gradient-background {
+    background: linear-gradient(135deg, #fafafa, #f3f4f6);
+  }
+  
+  .dark .gradient-background {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+  }
+  
+  /* Анимации */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    from { 
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes scaleIn {
+    from { 
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to { 
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  /* Улучшенные кнопки */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105;
+  }
+}
+
+/* Стили для мобильных устройств */
+@layer utilities {
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+  
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Стили для мобильной навигации */
+.mobile-nav {
+  @apply fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Обеспечение корректного отображения на мобильных устройствах */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: 176px; /* Оптимальный отступ - высота навигации + небольшой запас */
+  }
+  
+  /* Предотвращение переполнения на очень маленьких экранах */
+  .container, .max-w-* {
+    max-width: 100vw;
+    padding-left: clamp(0.75rem, 3vw, 1rem);
+    padding-right: clamp(0.75rem, 3vw, 1rem);
+  }
+  
+  /* Адаптивные карточки для мобильных */
+  .mobile-card {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    border-radius: 1rem;
+  }
+  
+  /* Адаптивные сетки */
+  .mobile-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  /* Адаптация текста для маленьких экранов */
+  .text-xs {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+  
+  .text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  
+  /* Адаптивные кнопки */
+  .mobile-button {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Стили для планшетов */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  .tablet-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* Стили для экстра малых экранов */
+@media (max-width: 375px) {
+  body {
+    padding-bottom: 180px; /* Оптимальный отступ для маленьких экранов */
+  }
+  
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .xs-card {
+    margin: 0.25rem;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+  }
+  
+  .xs-text {
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+}
+
+/* Стили для статусов заявок */
+.status-new {
+  @apply bg-blue-500 text-white;
+}
+
+.status-assigned {
+  @apply bg-yellow-500 text-white;
+}
+
+.status-in-progress {
+  @apply bg-purple-500 text-white;
+}
+
+.status-completed {
+  @apply bg-green-500 text-white;
+}
+
+.status-canceled {
+  @apply bg-gray-500 text-white;
+}
+
+.status-rejected {
+  @apply bg-red-500 text-white;
+}

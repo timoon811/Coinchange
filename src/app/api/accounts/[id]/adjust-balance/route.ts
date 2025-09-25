@@ -85,13 +85,12 @@ export async function POST(
       // Создаем запись операции
       await tx.operation.create({
         data: {
-          accountId: id,
+          fromAccountId: validatedData.amount < 0 ? id : null,
+          toAccountId: validatedData.amount > 0 ? id : null,
           officeId: existingAccount.officeId,
           currencyId: existingAccount.currencyId,
           type: OperationType.ADJUSTMENT,
-          amount: validatedData.amount,
-          balanceBefore: currentBalance,
-          balanceAfter: newBalance,
+          amount: Math.abs(validatedData.amount),
           description: validatedData.description,
           performedBy: userId
         }
@@ -100,11 +99,11 @@ export async function POST(
       // Создаем запись аудита
       await tx.auditLog.create({
         data: {
-          userId,
+          actorId: userId,
           action: 'BALANCE_ADJUSTMENT',
           entityType: 'Account',
           entityId: id,
-          details: {
+          newValues: {
             accountName: existingAccount.name,
             amount: validatedData.amount,
             balanceBefore: currentBalance,

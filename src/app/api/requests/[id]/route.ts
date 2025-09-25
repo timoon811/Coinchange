@@ -611,7 +611,7 @@ export async function PUT(
         client: {
           ...finalRequest!.client,
           totalRequests: finalRequest!.client._count.requests,
-          totalVolume: null, // TODO: вычислить общий объем
+          totalVolume: finalRequest!.client.requests.reduce((sum, req) => sum + (req.fromAmount || 0), 0)
         },
         timeToSLA: finalRequest!.slaDeadline 
           ? Math.max(0, Math.floor((new Date(finalRequest!.slaDeadline).getTime() - Date.now()) / 1000))

@@ -133,3 +133,4 @@ npx tsx prisma/seed-permissions.ts
 3. Добавьте описание в `resourceLabels` в PermissionsTab
 4. Создайте право через API или админ панель
 5. Назначьте право нужным ролям
+

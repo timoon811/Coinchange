@@ -512,6 +512,7 @@ export const currencyCreateSchema = z.object({
   symbol: z.string().max(10).optional(),
   type: z.nativeEnum(CurrencyType),
   decimals: z.number().int().min(0).max(18).default(8),
+  isActive: z.boolean().default(true),
 })
 
 export const accountCreateSchema = z.object({

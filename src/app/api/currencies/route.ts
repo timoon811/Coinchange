@@ -7,8 +7,6 @@ import { z } from 'zod'
 // GET /api/currencies - Получить список валют
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await AuthService.authenticateRequest(request)
-
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
     const isActive = searchParams.get('isActive')
@@ -41,8 +39,17 @@ export async function GET(request: NextRequest) {
 // POST /api/currencies - Создать новую валюту
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.id || session.user.role !== 'ADMIN') {
+    let payload: any
+    try {
+      payload = await AuthService.authenticateRequest(request)
+    } catch (error) {
+      return NextResponse.json<ApiResponse>({ 
+        success: false, 
+        error: 'Unauthorized' 
+      }, { status: 401 })
+    }
+    
+    if (payload.role !== 'ADMIN') {
       return NextResponse.json<ApiResponse>({ 
         success: false, 
         error: 'Access denied' 

@@ -6,6 +6,7 @@ import type { AuthenticatedPayload, RequestFilters, ApiResponse } from '@/lib/ty
 import { requestFiltersSchema } from '@/lib/types'
 import { validatePaginationFromUrl, calculateOffset, createPaginationMeta, createPaginatedResponse, normalizeBoolean, normalizeArray } from '@/lib/pagination'
 import { z } from 'zod'
+import { calculateSLADeadline, ClientPriority } from '@/lib/sla-config'
 
 // RequestFilters импортирован из @/lib/types
 
@@ -357,6 +358,16 @@ export async function POST(request: NextRequest) {
     // Генерируем уникальный ID заявки
     const requestId = `req-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
 
+    // Вычисляем SLA дедлайн автоматически
+    const slaDeadline = data.slaDeadline 
+      ? new Date(data.slaDeadline)
+      : calculateSLADeadline(
+          data.direction,
+          data.finance.expectedAmountFrom,
+          data.finance.fromCurrency,
+          ClientPriority.NORMAL // TODO: определять из профиля клиента
+        )
+
     // Создаем заявку в транзакции
     const result = await prisma.$transaction(async (tx) => {
       // Создаем заявку
@@ -369,7 +380,7 @@ export async function POST(request: NextRequest) {
           direction: data.direction,
           status: RequestStatus.NEW,
           source: 'manual',
-          slaDeadline: data.slaDeadline ? new Date(data.slaDeadline) : undefined,
+          slaDeadline,
         },
         include: {
           client: {

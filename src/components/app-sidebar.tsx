@@ -154,30 +154,32 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar suppressHydrationWarning>
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-4 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <BarChart3 className="h-4 w-4" />
+    <Sidebar suppressHydrationWarning className="stable-layout">
+      <SidebarHeader className="p-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary text-primary-foreground shadow-lg">
+            <BarChart3 className="h-5 w-5" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold">CryptoCRM</span>
-            <span className="text-xs text-muted-foreground">Обменный сервис</span>
+            <span className="text-lg font-bold">CryptoCRM</span>
+            <span className="text-sm text-muted-foreground">Обменный сервис</span>
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="px-4">
         {navigation.map((group) => (
-          <SidebarGroup key={group.title}>
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-            <SidebarMenu>
+          <SidebarGroup key={group.title} className="mb-6">
+            <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              {group.title}
+            </SidebarGroupLabel>
+            <SidebarMenu className="space-y-1">
               {group.items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                  <SidebarMenuButton asChild className="group">
+                    <Link href={item.url} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-accent hover:text-accent-foreground smooth-hover">
+                      <item.icon className="h-5 w-5" />
+                      <span className="font-medium">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -187,18 +189,18 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter>
-        <div className="flex items-center justify-between px-4 py-2">
+      <SidebarFooter className="p-4">
+        <div className="flex items-center justify-between">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 h-auto p-2">
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback className="text-xs">
+              <Button variant="ghost" className="flex items-center gap-3 h-auto p-3 w-full justify-start hover:bg-accent smooth-hover">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="text-sm font-semibold">
                     {user ? getInitials(user.firstName, user.lastName) : 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col items-start text-left">
-                  <span className="text-sm font-medium">
+                  <span className="text-sm font-semibold">
                     {user ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Пользователь'}
                   </span>
                   <span className="text-xs text-muted-foreground">
@@ -211,19 +213,19 @@ export function AppSidebar() {
               <DropdownMenuLabel>Мой аккаунт</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/profile">
-                  <User className="mr-2 h-4 w-4" />
+                <Link href="/dashboard/profile" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
                   <span>Профиль</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings">
-                  <Settings className="mr-2 h-4 w-4" />
+                <Link href="/dashboard/settings" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
                   <span>Настройки</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+              <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Выйти</span>
               </DropdownMenuItem>

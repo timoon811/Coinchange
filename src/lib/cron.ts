@@ -3,6 +3,7 @@ import { prisma } from './prisma'
 import { RequestStatus, NotificationType } from '@prisma/client'
 import { addMinutes, isAfter, differenceInMinutes } from 'date-fns'
 import { NotificationService } from './notifications'
+import { shouldEscalate, getSLACriticality, formatTimeToDeadline } from './sla-config'
 
 export class SLAMonitor {
   private static isRunning = false
@@ -106,11 +107,24 @@ export class SLAMonitor {
             name: true,
           },
         },
+        finance: {
+          select: {
+            fromCurrency: true,
+            expectedAmountFrom: true,
+          },
+        },
       },
     })
 
     for (const request of upcomingRequests) {
       const minutesToSLA = differenceInMinutes(request.slaDeadline!, now)
+      const timeElapsed = differenceInMinutes(now, request.createdAt)
+      
+      // Проверяем эскалацию
+      const escalation = shouldEscalate(request.direction, timeElapsed, 0)
+      
+      // Определяем критичность
+      const criticality = getSLACriticality(false, minutesToSLA)
 
       // Отправляем уведомление кассиру
       if (request.assignedUser) {
@@ -133,16 +147,24 @@ export class SLAMonitor {
             data: {
               userId: request.assignedUser.id,
               type: NotificationType.SLA_OVERDUE,
-              title: 'Приближается дедлайн SLA',
-              message: `Заявка ${request.requestId} (${request.client.firstName}) истекает через ${minutesToSLA} мин`,
+              title: `${criticality === 'critical' ? '🚨 КРИТИЧНО:' : '⚠️'} Приближается дедлайн SLA`,
+              message: `Заявка ${request.requestId} (${request.client.firstName}, ${request.finance?.expectedAmountFrom} ${request.finance?.fromCurrency}) истекает через ${formatTimeToDeadline(minutesToSLA)}`,
               payload: {
                 requestId: request.id,
                 clientName: request.client.firstName,
                 minutesLeft: minutesToSLA,
+                criticality,
+                amount: request.finance?.expectedAmountFrom,
+                currency: request.finance?.fromCurrency,
               },
             },
           })
         }
+      }
+
+      // Отправляем эскалационные уведомления
+      if (escalation.shouldEscalate) {
+        await this.sendEscalationNotifications(request, escalation.level, escalation.notifyRoles, timeElapsed)
       }
 
       // Отмечаем как "приближается дедлайн"
@@ -325,6 +347,55 @@ export class SLAMonitor {
     }
 
     console.log(`📊 Отправлен ежедневный отчет администраторам`)
+  }
+
+  static async sendEscalationNotifications(request: any, level: number, notifyRoles: string[], timeElapsed: number) {
+    try {
+      // Логируем эскалацию
+      await prisma.auditLog.create({
+        data: {
+          actorId: 'system',
+          entityType: 'request',
+          entityId: request.id,
+          action: 'sla_escalation',
+          newValues: {
+            escalationLevel: level,
+            timeElapsed,
+            notifyRoles,
+          },
+        },
+      })
+
+      // Отправляем уведомления по ролям
+      for (const role of notifyRoles) {
+        const users = await prisma.user.findMany({
+          where: { role: role as any },
+          select: { id: true, firstName: true, lastName: true },
+        })
+
+        for (const user of users) {
+          await prisma.notification.create({
+            data: {
+              userId: user.id,
+              type: NotificationType.SYSTEM,
+              title: `🚨 Эскалация SLA уровень ${level}`,
+              message: `Заявка ${request.requestId} требует внимания ${role}. Прошло ${formatTimeToDeadline(timeElapsed)} с момента создания`,
+              payload: {
+                requestId: request.id,
+                escalationLevel: level,
+                timeElapsed,
+                role,
+                urgent: true,
+              },
+            },
+          })
+        }
+      }
+
+      console.log(`🚨 SLA escalation level ${level} sent for request ${request.requestId}`)
+    } catch (error) {
+      console.error('Error sending escalation notifications:', error)
+    }
   }
 
   static async sendReminder(requestId: string) {

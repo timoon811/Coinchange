@@ -351,3 +351,4 @@ if (require.main === module) {
 }
 
 export { seedPermissions }
+

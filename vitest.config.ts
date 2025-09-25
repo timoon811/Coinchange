@@ -8,6 +8,10 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     globals: true,
+    exclude: [
+      'node_modules/**',
+      'src/test/integration/**', // Исключаем интеграционные тесты Playwright
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

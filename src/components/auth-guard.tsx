@@ -49,7 +49,7 @@ export function AuthGuard({ children, requiredRole, allowedOffices }: AuthGuardP
   // Показываем загрузку пока проверяем авторизацию или компонент не смонтирован
   if (loading || !mounted) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen stable-layout">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Проверка авторизации...</p>
@@ -61,7 +61,7 @@ export function AuthGuard({ children, requiredRole, allowedOffices }: AuthGuardP
   // Показываем загрузку пока перенаправляем
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen stable-layout">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Перенаправление...</p>

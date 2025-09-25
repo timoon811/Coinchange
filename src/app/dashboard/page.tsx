@@ -92,42 +92,42 @@ interface DashboardStats {
 const statusConfig = {
   [RequestStatus.NEW]: {
     label: 'Новые',
-    color: 'bg-blue-500',
+    color: 'status-new',
     icon: Clock,
   },
   [RequestStatus.ASSIGNED]: {
     label: 'Назначены',
-    color: 'bg-yellow-500',
+    color: 'status-assigned',
     icon: Users,
   },
   [RequestStatus.AWAITING_CLIENT]: {
     label: 'Ожидают клиента',
-    color: 'bg-orange-500',
+    color: 'status-assigned',
     icon: Clock,
   },
   [RequestStatus.IN_PROGRESS]: {
     label: 'В работе',
-    color: 'bg-purple-500',
+    color: 'status-in-progress',
     icon: RefreshCw,
   },
   [RequestStatus.AWAITING_CONFIRMATION]: {
     label: 'Ожидают подтверждения',
-    color: 'bg-cyan-500',
+    color: 'status-assigned',
     icon: Clock,
   },
   [RequestStatus.COMPLETED]: {
     label: 'Завершены',
-    color: 'bg-green-500',
+    color: 'status-completed',
     icon: CheckCircle,
   },
   [RequestStatus.CANCELED]: {
     label: 'Отменены',
-    color: 'bg-gray-500',
+    color: 'status-overdue',
     icon: XCircle,
   },
   [RequestStatus.REJECTED]: {
     label: 'Отклонены',
-    color: 'bg-red-500',
+    color: 'status-overdue',
     icon: AlertTriangle,
   },
 }
@@ -275,17 +275,19 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8" suppressHydrationWarning>
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Дашборд</h2>
-          <p className="text-muted-foreground">
+    <div className="flex-1 space-y-8 p-6 pt-8 md:p-10" suppressHydrationWarning>
+      <div className="flex items-center justify-between space-y-2 animate-fade-in">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Дашборд
+          </h1>
+          <p className="text-lg text-muted-foreground">
             Обзор работы обменного сервиса
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <Select value={period} onValueChange={handlePeriodChange}>
-            <SelectTrigger className="w-[120px]">
+            <SelectTrigger className="w-[140px] h-11 bg-background/50 backdrop-blur-sm border-border/50">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -296,9 +298,10 @@ export default function DashboardPage() {
           </Select>
           <Button
             variant="outline"
-            size="sm"
+            size="lg"
             onClick={handleRefresh}
             disabled={refreshing}
+            className="h-11 px-6"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             Обновить
@@ -307,18 +310,31 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Карточки */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {kpiCards.map((kpi, index) => (
-          <Card key={index} className={kpi.trend === "critical" ? "border-red-500" : ""}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+          <Card 
+            key={index} 
+            className={`animate-fade-in group stable-layout smooth-hover ${
+              kpi.trend === "critical" 
+                ? "border-red-500/50 bg-red-500/5 shadow-red-500/10" 
+                : "hover:border-primary/20 hover:shadow-primary/5"
+            }`}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 {kpi.title}
               </CardTitle>
-              <kpi.icon className={`h-4 w-4 ${kpi.trend === "critical" ? "text-red-500" : "text-muted-foreground"}`} />
+              <div className={`p-2 rounded-lg no-scale-hover ${
+                kpi.trend === "critical" 
+                  ? "bg-red-500/10 text-red-500" 
+                  : "bg-primary/10 text-primary group-hover:bg-primary/20"
+              }`}>
+                <kpi.icon className="h-5 w-5" />
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{kpi.value}</div>
-              <p className="text-xs text-muted-foreground">
+            <CardContent className="space-y-2">
+              <div className="text-3xl font-bold tracking-tight">{kpi.value}</div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {kpi.description}
               </p>
             </CardContent>
@@ -327,30 +343,30 @@ export default function DashboardPage() {
       </div>
 
       {/* Основной контент */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         {/* Недавние заявки */}
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Недавние заявки</CardTitle>
-            <CardDescription>
+        <Card className="col-span-4 animate-fade-in">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl">Недавние заявки</CardTitle>
+            <CardDescription className="text-base">
               Последние заявки, требующие обработки
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {stats.recentRequests.map((request) => {
+            <div className="space-y-4">
+              {stats.recentRequests.map((request, index) => {
                 const statusInfo = statusConfig[request.status]
                 const StatusIcon = statusInfo.icon
 
                 return (
                   <div
                     key={request.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    className="group flex items-center justify-between p-5 border border-border/50 rounded-xl hover:bg-muted/30 cursor-pointer stable-layout smooth-hover hover:shadow-md"
                     onClick={() => router.push(`/dashboard/requests/${request.id}`)}
                   >
                     <div className="flex items-center space-x-4">
-                      <div className="flex flex-col">
-                        <p className="text-sm font-medium">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-base font-semibold">
                           {request.client.firstName} {request.client.lastName}
                         </p>
                         <p className="text-sm text-muted-foreground">
@@ -361,15 +377,15 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
                       <Badge
-                        variant="secondary"
-                        className={`${statusInfo.color} text-white`}
+                        variant="outline"
+                        className={`${statusInfo.color} border shadow-sm hover:shadow-md no-scale-hover`}
                       >
-                        <StatusIcon className="mr-1 h-3 w-3" />
+                        <StatusIcon className="mr-1.5 h-3 w-3" />
                         {statusInfo.label}
                       </Badge>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 no-scale-hover">
                         <Eye className="h-4 w-4" />
                       </Button>
                     </div>
@@ -377,8 +393,9 @@ export default function DashboardPage() {
                 )
               })}
               {stats.recentRequests.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  Нет недавних заявок
+                <div className="text-center py-12 text-muted-foreground">
+                  <div className="text-4xl mb-4">📋</div>
+                  <p className="text-lg">Нет недавних заявок</p>
                 </div>
               )}
             </div>
@@ -386,15 +403,15 @@ export default function DashboardPage() {
         </Card>
 
         {/* Статистика по статусам */}
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>По статусам</CardTitle>
-            <CardDescription>
+        <Card className="col-span-3 animate-fade-in">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl">По статусам</CardTitle>
+            <CardDescription className="text-base">
               Распределение заявок
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {stats.statusStats.map((stat) => {
+          <CardContent className="space-y-5">
+            {stats.statusStats.map((stat, index) => {
               const statusInfo = statusConfig[stat.status]
               const StatusIcon = statusInfo.icon
               const percentage = stats.kpi.totalRequests > 0
@@ -402,21 +419,38 @@ export default function DashboardPage() {
                 : 0
 
               return (
-                <div key={stat.status} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <StatusIcon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{statusInfo.label}</span>
+                <div 
+                  key={stat.status} 
+                  className="group flex items-center justify-between p-4 rounded-lg hover:bg-muted/30 stable-layout smooth-hover"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 no-scale-hover">
+                      <StatusIcon className="h-4 w-4" />
+                    </div>
+                    <span className="text-sm font-medium">{statusInfo.label}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">{stat.count}</span>
-                    <span className="text-xs text-muted-foreground">({percentage}%)</span>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-lg font-bold">{stat.count}</span>
+                    <div className="flex items-center space-x-1">
+                      <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary rounded-full no-scale-hover"
+                          style={{ 
+                            width: `${percentage}%`,
+                            transition: 'width 300ms ease'
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground min-w-[3rem]">({percentage}%)</span>
+                    </div>
                   </div>
                 </div>
               )
             })}
             {stats.statusStats.length === 0 && (
-              <div className="text-center py-4 text-muted-foreground">
-                Нет данных
+              <div className="text-center py-8 text-muted-foreground">
+                <div className="text-3xl mb-3">📊</div>
+                <p className="text-base">Нет данных</p>
               </div>
             )}
           </CardContent>
@@ -424,50 +458,78 @@ export default function DashboardPage() {
       </div>
 
       {/* Дополнительная статистика */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
         {/* По направлениям */}
-        <Card>
-          <CardHeader>
-            <CardTitle>По направлениям</CardTitle>
-            <CardDescription>
+        <Card className="animate-fade-in">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl">По направлениям</CardTitle>
+            <CardDescription className="text-base">
               Популярные направления обмена
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {stats.directionStats.slice(0, 5).map((stat) => (
-              <div key={stat.direction} className="flex items-center justify-between">
-                <span className="text-sm">{directionLabels[stat.direction]}</span>
+          <CardContent className="space-y-5">
+            {stats.directionStats.slice(0, 5).map((stat, index) => (
+              <div 
+                key={stat.direction} 
+                className="group flex items-center justify-between p-4 rounded-lg hover:bg-muted/30 stable-layout smooth-hover"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 text-primary">
+                    <TrendingUp className="h-4 w-4" />
+                  </div>
+                  <span className="text-sm font-medium">{directionLabels[stat.direction]}</span>
+                </div>
                 <div className="text-right">
-                  <div className="text-sm font-medium">{stat.count}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-lg font-bold">{stat.count}</div>
+                  <div className="text-sm text-muted-foreground">
                     {formatVolume(stat.volume)}
                   </div>
                 </div>
               </div>
             ))}
+            {stats.directionStats.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <div className="text-3xl mb-3">📈</div>
+                <p className="text-base">Нет данных</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* По валютам */}
-        <Card>
-          <CardHeader>
-            <CardTitle>По валютам</CardTitle>
-            <CardDescription>
+        <Card className="animate-fade-in">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl">По валютам</CardTitle>
+            <CardDescription className="text-base">
               Самые популярные валюты
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {stats.currencyStats.slice(0, 5).map((stat) => (
-              <div key={stat.currency} className="flex items-center justify-between">
-                <span className="text-sm">{stat.currency}</span>
+          <CardContent className="space-y-5">
+            {stats.currencyStats.slice(0, 5).map((stat, index) => (
+              <div 
+                key={stat.currency} 
+                className="group flex items-center justify-between p-4 rounded-lg hover:bg-muted/30 stable-layout smooth-hover"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-green-500/10 to-green-500/5 text-green-600">
+                    <DollarSign className="h-4 w-4" />
+                  </div>
+                  <span className="text-sm font-medium">{stat.currency}</span>
+                </div>
                 <div className="text-right">
-                  <div className="text-sm font-medium">{stat.count}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-lg font-bold">{stat.count}</div>
+                  <div className="text-sm text-muted-foreground">
                     {formatVolume(stat.volume)}
                   </div>
                 </div>
               </div>
             ))}
+            {stats.currencyStats.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <div className="text-3xl mb-3">💰</div>
+                <p className="text-base">Нет данных</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

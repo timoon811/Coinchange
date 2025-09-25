@@ -10,6 +10,10 @@ const publicRoutes = [
   '/api/auth/logout',
   '/api/telegram/webhook',
   '/api/health',
+  '/api/client/auth',
+  '/api/currencies',
+  '/api/exchange-rates',
+  '/api/requests',
 ]
 
 // Маршруты, требующие аутентификации
@@ -20,6 +24,7 @@ const protectedRoutes = [
   '/dashboard/reports',
   '/dashboard/settings',
   '/dashboard/sla',
+  '/admin',
 ]
 
 function isProtectedRoute(pathname: string): boolean {
