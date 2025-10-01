@@ -7,8 +7,10 @@ import { z } from 'zod'
 // GET /api/deposits - Получить список депозитов
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
+    let payload: any
+    try {
+      payload = await AuthService.authenticateRequest(request)
+    } catch (error) {
       return NextResponse.json<ApiResponse>({ 
         success: false, 
         error: 'Unauthorized' 
@@ -27,13 +29,13 @@ export async function GET(request: NextRequest) {
 
     // Ограничиваем доступ кассиров только к их офисам
     let officeFilter: any = {}
-    if (session.user.role === 'CASHIER' && session.user.officeIds) {
+    if (payload.role === 'CASHIER' && payload.officeIds) {
       officeFilter = { 
-        officeId: { in: session.user.officeIds } 
+        officeId: { in: payload.officeIds } 
       }
     }
     if (officeId) {
-      if (session.user.role === 'CASHIER' && !session.user.officeIds?.includes(officeId)) {
+      if (payload.role === 'CASHIER' && !payload.officeIds?.includes(officeId)) {
         return NextResponse.json<ApiResponse>({ 
           success: false, 
           error: 'Access denied' 
@@ -117,8 +119,10 @@ export async function GET(request: NextRequest) {
 // POST /api/deposits - Создать новый депозит
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
+    let payload: any
+    try {
+      payload = await AuthService.authenticateRequest(request)
+    } catch (error) {
       return NextResponse.json<ApiResponse>({ 
         success: false, 
         error: 'Unauthorized' 
@@ -129,8 +133,8 @@ export async function POST(request: NextRequest) {
     const validatedData = depositCreateSchema.parse(body)
 
     // Проверяем доступ к офису
-    if (session.user.role === 'CASHIER' && 
-        !session.user.officeIds?.includes(validatedData.officeId)) {
+    if (payload.role === 'CASHIER' && 
+        !payload.officeIds?.includes(validatedData.officeId)) {
       return NextResponse.json<ApiResponse>({ 
         success: false, 
         error: 'Access denied' 

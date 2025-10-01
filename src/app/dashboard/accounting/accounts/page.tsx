@@ -231,25 +231,32 @@ export default function AccountsPage() {
   }
 
   return (
-    <div className="space-y-6 p-4 pt-6 md:p-6 max-w-full">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <h1 className="text-2xl md:text-3xl font-bold">Счета офисов</h1>
-        <Dialog 
-          open={isCreateDialogOpen} 
-          onOpenChange={(open) => {
-            setIsCreateDialogOpen(open)
-            if (!open) {
-              setEditingAccount(null)
-              form.reset()
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Добавить счет
-            </Button>
-          </DialogTrigger>
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Заголовок - фиксированная высота */}
+      <div className="flex-shrink-0 border-b bg-background px-4 py-4 md:px-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Счета офисов</h1>
+            <p className="text-sm text-muted-foreground">
+              Управление счетами офисов
+            </p>
+          </div>
+          <Dialog 
+            open={isCreateDialogOpen} 
+            onOpenChange={(open) => {
+              setIsCreateDialogOpen(open)
+              if (!open) {
+                setEditingAccount(null)
+                form.reset()
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Добавить счет
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
@@ -435,7 +442,8 @@ export default function AccountsPage() {
               </form>
             </Form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Диалог корректировки баланса */}
@@ -512,48 +520,53 @@ export default function AccountsPage() {
         </DialogContent>
       </Dialog>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Поиск счетов..."
-                className="pl-8 w-full"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-              <Select value={selectedOffice} onValueChange={setSelectedOffice}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Офис" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Все офисы</SelectItem>
-                  {Array.isArray(offices) && offices.map((office) => (
-                    <SelectItem key={office.id} value={office.id}>
-                      {office.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-full sm:w-[160px]">
-                  <SelectValue placeholder="Тип счета" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Все типы</SelectItem>
-                  <SelectItem value={AccountType.CASH}>Наличка</SelectItem>
-                  <SelectItem value={AccountType.CRYPTO}>Криптовалютный</SelectItem>
-                  <SelectItem value={AccountType.BANK}>Банковский</SelectItem>
-                  <SelectItem value={AccountType.CARD}>Карточный</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Фильтры - компактные */}
+      <div className="flex-shrink-0 border-b bg-muted/20 px-4 py-3 md:px-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Поиск счетов..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
+          <Select value={selectedOffice} onValueChange={setSelectedOffice}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Офис" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все офисы</SelectItem>
+              {offices.map((office) => (
+                <SelectItem key={office.id} value={office.id}>
+                  {office.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Валюта" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все валюты</SelectItem>
+              {currencies.map((currency) => (
+                <SelectItem key={currency.id} value={currency.id}>
+                  {currency.code}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Основной контент */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 overflow-auto">
+          <div className="px-4 py-4 md:px-6">
+            <Card>
+              <CardContent className="p-0">
           {loading ? (
             <div className="text-center py-8">Загрузка...</div>
           ) : (
@@ -741,8 +754,11 @@ export default function AccountsPage() {
               </div>
             </>
           )}
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

@@ -199,25 +199,32 @@ export default function OperationsPage() {
   )
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Операции</h1>
-        <Sheet 
-          open={isCreateSheetOpen} 
-          onOpenChange={(open) => {
-            setIsCreateSheetOpen(open)
-            if (!open) {
-              form.reset()
-            }
-          }}
-        >
-          <SheetTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Новая операция
-            </Button>
-          </SheetTrigger>
-          <SheetContent className="w-[90vw] sm:w-[600px] lg:w-[800px] sm:max-w-[800px] overflow-y-auto" side="right">
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Заголовок - фиксированная высота */}
+      <div className="flex-shrink-0 border-b bg-background px-4 py-4 md:px-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Операции</h1>
+            <p className="text-sm text-muted-foreground">
+              Управление финансовыми операциями
+            </p>
+          </div>
+          <Sheet 
+            open={isCreateSheetOpen} 
+            onOpenChange={(open) => {
+              setIsCreateSheetOpen(open)
+              if (!open) {
+                form.reset()
+              }
+            }}
+          >
+            <SheetTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Новая операция
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-[90vw] sm:w-[600px] lg:w-[800px] sm:max-w-[800px] overflow-y-auto" side="right">
             <SheetHeader>
               <SheetTitle>Создать операцию</SheetTitle>
             </SheetHeader>
@@ -440,64 +447,71 @@ export default function OperationsPage() {
                 </form>
               </Form>
             </div>
-          </SheetContent>
-        </Sheet>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Поиск операций..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Select value={selectedOffice} onValueChange={setSelectedOffice}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Офис" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все офисы</SelectItem>
-                {offices.map((office) => (
-                  <SelectItem key={office.id} value={office.id}>
-                    {office.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Тип операции" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все типы</SelectItem>
-                <SelectItem value={OperationType.EXCHANGE}>Обмен</SelectItem>
-                <SelectItem value={OperationType.DEPOSIT}>Ввод</SelectItem>
-                <SelectItem value={OperationType.WITHDRAWAL}>Вывод</SelectItem>
-                <SelectItem value={OperationType.TRANSFER}>Перевод</SelectItem>
-                <SelectItem value={OperationType.ADJUSTMENT}>Корректировка</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Валюта" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все валюты</SelectItem>
-                {currencies.map((currency) => (
-                  <SelectItem key={currency.id} value={currency.id}>
-                    {currency.code}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {/* Фильтры - компактные */}
+      <div className="flex-shrink-0 border-b bg-muted/20 px-4 py-3 md:px-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Поиск операций..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-        </CardHeader>
-        <CardContent>
+          <Select value={selectedOffice} onValueChange={setSelectedOffice}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Офис" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все офисы</SelectItem>
+              {offices.map((office) => (
+                <SelectItem key={office.id} value={office.id}>
+                  {office.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedType} onValueChange={setSelectedType}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Тип операции" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все типы</SelectItem>
+              <SelectItem value={OperationType.EXCHANGE}>Обмен</SelectItem>
+              <SelectItem value={OperationType.DEPOSIT}>Ввод</SelectItem>
+              <SelectItem value={OperationType.WITHDRAWAL}>Вывод</SelectItem>
+              <SelectItem value={OperationType.TRANSFER}>Перевод</SelectItem>
+              <SelectItem value={OperationType.ADJUSTMENT}>Корректировка</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Валюта" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все валюты</SelectItem>
+              {currencies.map((currency) => (
+                <SelectItem key={currency.id} value={currency.id}>
+                  {currency.code}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Основной контент */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 overflow-auto">
+          <div className="px-4 py-4 md:px-6">
+            <Card>
+              <CardContent className="p-0">
           {loading ? (
             <div className="text-center py-8">Загрузка...</div>
           ) : (
@@ -605,8 +619,11 @@ export default function OperationsPage() {
               )}
             </>
           )}
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

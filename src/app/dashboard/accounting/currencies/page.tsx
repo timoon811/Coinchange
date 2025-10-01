@@ -44,7 +44,9 @@ export default function CurrenciesPage() {
         params.append('type', selectedType)
       }
       
-      const response = await fetch(`/api/currencies?${params}`)
+      const response = await fetch(`/api/currencies?${params}`, {
+        credentials: 'include'
+      })
       const result = await response.json()
       
       if (result.success) {
@@ -53,6 +55,7 @@ export default function CurrenciesPage() {
         toast.error('Ошибка загрузки валют')
       }
     } catch (error) {
+      console.error('Fetch currencies error:', error)
       toast.error('Ошибка загрузки валют')
     } finally {
       setLoading(false)
@@ -71,6 +74,7 @@ export default function CurrenciesPage() {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(data)
       })
       
@@ -86,6 +90,7 @@ export default function CurrenciesPage() {
         toast.error(result.error || 'Ошибка сохранения валюты')
       }
     } catch (error) {
+      console.error('Save currency error:', error)
       toast.error('Ошибка сохранения валюты')
     }
   }
@@ -110,7 +115,11 @@ export default function CurrenciesPage() {
 
     try {
       const response = await fetch(`/api/currencies/${currency.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       })
       
       const result = await response.json()
@@ -122,6 +131,7 @@ export default function CurrenciesPage() {
         toast.error(result.error || 'Ошибка удаления валюты')
       }
     } catch (error) {
+      console.error('Delete currency error:', error)
       toast.error('Ошибка удаления валюты')
     }
   }
@@ -158,33 +168,40 @@ export default function CurrenciesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Валюты</h1>
-        <Dialog 
-          open={isCreateDialogOpen} 
-          onOpenChange={(open) => {
-            setIsCreateDialogOpen(open)
-            if (!open) {
-              setEditingCurrency(null)
-              form.reset()
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Добавить валюту
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Заголовок - фиксированная высота */}
+      <div className="flex-shrink-0 border-b bg-background px-4 py-4 md:px-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Валюты</h1>
+            <p className="text-sm text-muted-foreground">
+              Управление валютами системы
+            </p>
+          </div>
+          <Dialog 
+            open={isCreateDialogOpen} 
+            onOpenChange={(open) => {
+              setIsCreateDialogOpen(open)
+              if (!open) {
+                setEditingCurrency(null)
+                form.reset()
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Добавить валюту
+              </Button>
+            </DialogTrigger>
+          <DialogContent className="max-w-md mx-auto">
+            <DialogHeader className="pb-4">
               <DialogTitle>
                 {editingCurrency ? 'Редактировать валюту' : 'Добавить валюту'}
               </DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
                   name="code"
@@ -291,7 +308,7 @@ export default function CurrenciesPage() {
                     </FormItem>
                   )}
                 />
-                <div className="flex justify-end space-x-2">
+                <div className="flex justify-end space-x-3 pt-4">
                   <Button 
                     type="button" 
                     variant="outline" 
@@ -306,75 +323,83 @@ export default function CurrenciesPage() {
               </form>
             </Form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Поиск валют..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Тип валюты" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все типы</SelectItem>
-                <SelectItem value={CurrencyType.CRYPTO}>Криптовалюты</SelectItem>
-                <SelectItem value={CurrencyType.FIAT}>Фиатные валюты</SelectItem>
-                <SelectItem value={CurrencyType.CASH}>Наличные</SelectItem>
-              </SelectContent>
-            </Select>
+      {/* Фильтры - компактные */}
+      <div className="flex-shrink-0 border-b bg-muted/20 px-4 py-3 md:px-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Поиск валют..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-        </CardHeader>
-        <CardContent>
+          <Select value={selectedType} onValueChange={setSelectedType}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Тип валюты" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все типы</SelectItem>
+              <SelectItem value={CurrencyType.CRYPTO}>Криптовалюта</SelectItem>
+              <SelectItem value={CurrencyType.FIAT}>Фиатная валюта</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Основной контент */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 overflow-auto">
+          <div className="px-4 py-4 md:px-6">
+            <Card>
+              <CardContent className="p-0">
           {loading ? (
             <div className="text-center py-8">Загрузка...</div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+              <Table className="min-w-[800px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Код</TableHead>
-                  <TableHead>Название</TableHead>
-                  <TableHead>Символ</TableHead>
-                  <TableHead>Тип</TableHead>
-                  <TableHead>Знаков после запятой</TableHead>
-                  <TableHead>Статус</TableHead>
-                  <TableHead className="text-right">Действия</TableHead>
+                  <TableHead className="px-4 py-3">Код</TableHead>
+                  <TableHead className="px-4 py-3">Название</TableHead>
+                  <TableHead className="px-4 py-3">Символ</TableHead>
+                  <TableHead className="px-4 py-3">Тип</TableHead>
+                  <TableHead className="px-4 py-3">Знаков после запятой</TableHead>
+                  <TableHead className="px-4 py-3">Статус</TableHead>
+                  <TableHead className="text-right px-4 py-3">Действия</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredCurrencies.map((currency) => (
                   <TableRow key={currency.id}>
-                    <TableCell className="font-mono font-semibold">
+                    <TableCell className="font-mono font-semibold px-4 py-3">
                       {currency.code}
                     </TableCell>
-                    <TableCell>{currency.name}</TableCell>
-                    <TableCell>{currency.symbol || '—'}</TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-3">{currency.name}</TableCell>
+                    <TableCell className="px-4 py-3">{currency.symbol || '—'}</TableCell>
+                    <TableCell className="px-4 py-3">
                       <Badge className={getCurrencyTypeBadgeColor(currency.type)}>
                         {getCurrencyTypeLabel(currency.type)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{currency.decimals}</TableCell>
-                    <TableCell>
+                    <TableCell className="px-4 py-3">{currency.decimals}</TableCell>
+                    <TableCell className="px-4 py-3">
                       <Badge variant={currency.isActive ? 'default' : 'secondary'}>
                         {currency.isActive ? 'Активна' : 'Неактивна'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right px-4 py-3">
                       <div className="flex justify-end space-x-2">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleEdit(currency)}
+                          className="h-8 w-8 p-0"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -382,6 +407,7 @@ export default function CurrenciesPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDelete(currency)}
+                          className="h-8 w-8 p-0"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -391,16 +417,20 @@ export default function CurrenciesPage() {
                 ))}
                 {filteredCurrencies.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8 px-4">
                       Валюты не найдены
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+            </div>
           )}
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

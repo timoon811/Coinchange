@@ -18,15 +18,6 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    let payload: any
-    try {
-      payload = await AuthService.authenticateRequest(request)
-    } catch (error) {
-      return NextResponse.json<ApiResponse>({ 
-        success: false, 
-        error: 'Unauthorized' 
-      }, { status: 401 })
-    }
 
     const currency = await prisma.currency.findUnique({
       where: { id: id }
@@ -39,10 +30,16 @@ export async function GET(
       }, { status: 404 })
     }
 
-    return NextResponse.json<ApiResponse<CurrencyData>>({
+    const response = NextResponse.json<ApiResponse<CurrencyData>>({
       success: true,
       data: currency
     })
+    
+    // Добавляем CORS заголовки
+    response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3001')
+    response.headers.set('Access-Control-Allow-Credentials', 'true')
+    
+    return response
 
   } catch (error) {
     console.error('Error fetching currency:', error)
@@ -96,11 +93,17 @@ export async function PUT(
       data: validatedData
     })
 
-    return NextResponse.json<ApiResponse<CurrencyData>>({
+    const response = NextResponse.json<ApiResponse<CurrencyData>>({
       success: true,
       data: currency,
       message: 'Валюта успешно обновлена'
     })
+    
+    // Добавляем CORS заголовки
+    response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3001')
+    response.headers.set('Access-Control-Allow-Credentials', 'true')
+    
+    return response
 
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -148,7 +151,8 @@ export async function DELETE(
       include: {
         accounts: true,
         operations: true,
-        deposits: true
+        deposits: true,
+        exchangeRates: true
       }
     })
 
@@ -159,7 +163,7 @@ export async function DELETE(
       }, { status: 404 })
     }
 
-    // Проверяем, используется ли валюта
+    // Проверяем, используется ли валюта в критичных местах
     if (existingCurrency.accounts.length > 0 || 
         existingCurrency.operations.length > 0 || 
         existingCurrency.deposits.length > 0) {
@@ -169,14 +173,33 @@ export async function DELETE(
       }, { status: 400 })
     }
 
-    await prisma.currency.delete({
-      where: { id: id }
+    // Удаляем валюту вместе с курсами валют в транзакции
+    await prisma.$transaction(async (tx) => {
+      // Сначала удаляем все курсы валют для этой валюты
+      if (existingCurrency.exchangeRates.length > 0) {
+        await tx.exchangeRate.deleteMany({
+          where: { currencyId: id }
+        })
+      }
+      
+      // Затем удаляем саму валюту
+      await tx.currency.delete({
+        where: { id: id }
+      })
     })
 
-    return NextResponse.json<ApiResponse>({
+    const response = NextResponse.json<ApiResponse>({
       success: true,
-      message: 'Валюта успешно удалена'
+      message: existingCurrency.exchangeRates.length > 0 
+        ? `Валюта и ${existingCurrency.exchangeRates.length} курсов валют успешно удалены`
+        : 'Валюта успешно удалена'
     })
+    
+    // Добавляем CORS заголовки
+    response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3001')
+    response.headers.set('Access-Control-Allow-Credentials', 'true')
+    
+    return response
 
   } catch (error) {
     console.error('Error deleting currency:', error)

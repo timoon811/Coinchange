@@ -22,10 +22,16 @@ export async function GET(request: NextRequest) {
       ]
     })
 
-    return NextResponse.json<ApiResponse<CurrencyData[]>>({
+    const response = NextResponse.json<ApiResponse<CurrencyData[]>>({
       success: true,
       data: currencies
     })
+    
+    // Добавляем CORS заголовки
+    response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3001')
+    response.headers.set('Access-Control-Allow-Credentials', 'true')
+    
+    return response
 
   } catch (error) {
     console.error('Error fetching currencies:', error)
@@ -78,11 +84,17 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json<ApiResponse<CurrencyData>>({
+    const response = NextResponse.json<ApiResponse<CurrencyData>>({
       success: true,
       data: currency,
       message: 'Валюта успешно создана'
     })
+    
+    // Добавляем CORS заголовки
+    response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3001')
+    response.headers.set('Access-Control-Allow-Credentials', 'true')
+    
+    return response
 
   } catch (error) {
     if (error instanceof z.ZodError) {
