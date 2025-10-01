@@ -95,8 +95,8 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
       console.log('CreateRequestModal: officesResult:', officesResult) // Debug log
       console.log('CreateRequestModal: currenciesResult:', currenciesResult) // Debug log
 
-      if (officesResult?.offices && Array.isArray(officesResult.offices)) {
-        setOffices(officesResult.offices)
+      if (officesResult?.data?.offices && Array.isArray(officesResult.data.offices)) {
+        setOffices(officesResult.data.offices)
       } else {
         setLoadingError('Не удалось загрузить список офисов')
       }

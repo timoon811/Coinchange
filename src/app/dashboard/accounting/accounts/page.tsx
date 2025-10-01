@@ -30,6 +30,7 @@ export default function AccountsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedOffice, setSelectedOffice] = useState<string>('all')
   const [selectedType, setSelectedType] = useState<string>('all')
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('all')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<AccountData | null>(null)
@@ -58,8 +59,13 @@ export default function AccountsPage() {
 
   const fetchData = async () => {
     try {
+      const params = new URLSearchParams()
+      if (selectedOffice !== 'all') params.append('officeId', selectedOffice)
+      if (selectedType !== 'all') params.append('type', selectedType)
+      if (selectedCurrency !== 'all') params.append('currencyId', selectedCurrency)
+
       const [accountsRes, currenciesRes, officesRes] = await Promise.all([
-        fetch('/api/accounts'),
+        fetch(`/api/accounts?${params}`),
         fetch('/api/currencies?isActive=true'),
         fetch('/api/admin/offices')
       ])
@@ -82,7 +88,7 @@ export default function AccountsPage() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [selectedOffice, selectedType, selectedCurrency])
 
   const onSubmit = async (data: AccountCreateInput) => {
     try {
