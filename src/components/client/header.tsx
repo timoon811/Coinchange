@@ -92,7 +92,7 @@ export function Header() {
           </DropdownMenu>
         ) : (
           <Button asChild size="sm" className="text-sm px-3 sm:px-4">
-            <Link href="/auth">Войти</Link>
+            <Link href="/client/auth">Войти</Link>
           </Button>
         )}
 

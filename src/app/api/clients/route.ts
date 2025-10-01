@@ -21,7 +21,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const userId = payload.userId
     const userRole = payload.role
     const userOffices = payload.officeIds
 
@@ -212,7 +211,7 @@ const createClientSchema = z.object({
   lastName: z.string().nullable().optional(),
   username: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
-  telegramUserId: z.string().min(1, 'Telegram ID обязателен'),
+  telegramUserId: z.string().nullable().optional(),
   tags: z.array(z.string()).optional(),
   notes: z.string().nullable().optional(),
   isBlocked: z.boolean().optional(),
@@ -271,16 +270,26 @@ export async function POST(request: NextRequest) {
 
     const data = validationResult.data
 
-    // Проверяем уникальность Telegram ID
-    const existingClient = await prisma.client.findUnique({
-      where: { telegramUserId: data.telegramUserId },
-    })
-
-    if (existingClient) {
+    // Проверяем, что указано хотя бы одно из полей: firstName, lastName, username
+    if (!data.firstName && !data.lastName && !data.username) {
       return NextResponse.json<ApiResponse>(
-        { success: false, error: 'Клиент с таким Telegram ID уже существует' },
-        { status: 409 }
+        { success: false, error: 'Укажите хотя бы имя, фамилию или username' },
+        { status: 400 }
       )
+    }
+
+    // Проверяем уникальность Telegram ID только если он указан
+    if (data.telegramUserId) {
+      const existingClient = await prisma.client.findUnique({
+        where: { telegramUserId: data.telegramUserId },
+      })
+
+      if (existingClient) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: 'Клиент с таким Telegram ID уже существует' },
+          { status: 409 }
+        )
+      }
     }
 
     // Создаем клиента

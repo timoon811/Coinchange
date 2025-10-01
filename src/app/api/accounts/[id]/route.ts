@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { AuthService } from '@/lib/auth'
 import { type ApiResponse, type AccountData } from '@/lib/types'
-import { UserRole } from '@prisma/client'
 import { z } from 'zod'
 
 const accountUpdateSchema = z.object({
@@ -25,15 +24,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    let payload: any
-    try {
-      payload = await AuthService.authenticateRequest(request)
-    } catch (error) {
-      return NextResponse.json<ApiResponse>({ 
-        success: false, 
-        error: 'Unauthorized' 
-      }, { status: 401 })
-    }
+    const payload = await AuthService.authenticateRequest(request)
 
     const account = await prisma.account.findUnique({
       where: { id },
@@ -92,15 +83,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    let payload: any
-    try {
-      payload = await AuthService.authenticateRequest(request)
-    } catch (error) {
-      return NextResponse.json<ApiResponse>({ 
-        success: false, 
-        error: 'Unauthorized' 
-      }, { status: 401 })
-    }
+    const payload = await AuthService.authenticateRequest(request)
 
     const body = await request.json()
     const validatedData = accountUpdateSchema.parse(body)
@@ -236,15 +219,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    let payload: any
-    try {
-      payload = await AuthService.authenticateRequest(request)
-    } catch (error) {
-      return NextResponse.json<ApiResponse>({ 
-        success: false, 
-        error: 'Unauthorized' 
-      }, { status: 401 })
-    }
+    const payload = await AuthService.authenticateRequest(request)
 
     const body = await request.json()
     const validatedData = balanceUpdateSchema.parse(body)

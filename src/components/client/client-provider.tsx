@@ -75,7 +75,8 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
         throw new Error(errorData.error || "Failed to authenticate client");
       }
 
-      const clientData = await response.json();
+      const responseData = await response.json();
+      const clientData = responseData.data;
       setClient(clientData);
       localStorage.setItem("crypto-client", JSON.stringify(clientData));
       

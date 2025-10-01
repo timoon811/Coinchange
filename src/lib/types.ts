@@ -44,7 +44,7 @@ export interface AuthenticatedPayload {
   officeIds?: string[]
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean
   data?: T
   error?: string
@@ -760,7 +760,7 @@ export interface BackupStats {
 // Типы для WebSocket уведомлений
 export interface WebSocketMessage {
   event: string
-  data: any
+  data: unknown
   timestamp: Date
   type: 'user_notification' | 'role_notification' | 'office_notification' | 'global_notification'
   senderId?: string

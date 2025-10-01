@@ -7,7 +7,7 @@ interface PermissionSeed {
   description: string
   type: PermissionType
   resource: ResourceType
-  conditions?: any
+  conditions?: Record<string, unknown>
 }
 
 const basePermissions: PermissionSeed[] = [

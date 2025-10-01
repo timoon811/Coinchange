@@ -10,7 +10,7 @@ const commissionRuleCreateSchema = z.object({
   name: z.string().min(1, 'Название обязательно').max(100),
   description: z.string().max(500).optional(),
   scope: z.enum(['global', 'office', 'client', 'direction', 'amount_range']),
-  conditions: z.any().optional(), // JSON объект с условиями
+  conditions: z.record(z.unknown()).optional(), // JSON объект с условиями
   percent: z.number().min(0).max(100).optional(),
   fixed: z.number().min(0).optional(),
   priority: z.number().int().default(0),
@@ -18,7 +18,7 @@ const commissionRuleCreateSchema = z.object({
 })
 
 // Схема валидации для обновления правила комиссии
-const commissionRuleUpdateSchema = commissionRuleCreateSchema.partial()
+// const commissionRuleUpdateSchema = commissionRuleCreateSchema.partial()
 
 // GET /api/admin/commission-rules - Получить список правил комиссий
 export async function GET(request: NextRequest) {
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
 
     // Строим условия WHERE
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (search) {
       where.OR = [

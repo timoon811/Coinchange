@@ -3,11 +3,12 @@ import { prisma } from '@/lib/prisma'
 import { AuthService } from '@/lib/auth'
 import { accountCreateSchema, type ApiResponse, type AccountData } from '@/lib/types'
 import { z } from 'zod'
+import { AccountType } from '@prisma/client'
 
 // GET /api/accounts - Получить список счетов
 export async function GET(request: NextRequest) {
   try {
-    const { userId, userRole, userOffices } = await AuthService.authenticateRequest(request)
+    const { userRole, userOffices } = await AuthService.authenticateRequest(request)
 
     const { searchParams } = new URL(request.url)
     const officeId = searchParams.get('officeId')
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     const isActive = searchParams.get('isActive')
 
     // Ограничиваем доступ кассиров только к их офисам
-    let officeFilter: any = {}
+    let officeFilter: { officeId?: { in: string[] } | string } = {}
     if (userRole === 'CASHIER' && userOffices) {
       officeFilter = { 
         officeId: { in: userOffices } 
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
       where: {
         ...officeFilter,
         ...(currencyId && { currencyId }),
-        ...(type && { type: type as any }),
+        ...(type && { type: type as AccountType }),
         ...(isActive !== null && { isActive: isActive === 'true' })
       },
       include: {
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
 // POST /api/accounts - Создать новый счет
 export async function POST(request: NextRequest) {
   try {
-    const { userId, userRole, userOffices } = await AuthService.authenticateRequest(request)
+    const { userRole, userOffices } = await AuthService.authenticateRequest(request)
 
     const body = await request.json()
     const validatedData = accountCreateSchema.parse(body)

@@ -24,14 +24,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-
-interface Client {
-  id: string
-  username: string
-  firstName: string
-  lastName: string
-  phone: string
-}
+import { ClientSearchSelect } from '@/components/ui/client-search-select'
+import { OfficeSelect } from '@/components/ui/office-select'
+import { DirectionSelectSimple } from '@/components/ui/direction-select-simple'
 
 interface Office {
   id: string
@@ -42,7 +37,6 @@ interface Office {
 export default function NewRequestPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const [clients, setClients] = useState<Client[]>([])
   const [offices, setOffices] = useState<Office[]>([])
   const [currencies, setCurrencies] = useState<string[]>([])
   
@@ -60,7 +54,6 @@ export default function NewRequestPage() {
     comment: '',
   })
 
-  const { execute: fetchClients } = useApi<{data: Client[]}>()
   const { execute: fetchOffices } = useApi<{data: {offices: Office[], pagination: any}}>()
   const { execute: fetchCurrencies } = useApi<{data: Array<{code: string, isActive: boolean}>}>()
   const { execute: createRequest, loading: creating } = useApi()
@@ -68,15 +61,11 @@ export default function NewRequestPage() {
   // Загрузка данных
   useEffect(() => {
     const loadData = async () => {
-      const [clientsResult, officesResult, currenciesResult] = await Promise.all([
-        fetchClients('/api/clients?limit=100'),
+      const [officesResult, currenciesResult] = await Promise.all([
         fetchOffices('/api/admin/offices?limit=100'),
         fetchCurrencies('/api/currencies?isActive=true'),
       ])
 
-      if (clientsResult?.data && Array.isArray(clientsResult.data)) {
-        setClients(clientsResult.data)
-      }
       if (officesResult?.data?.offices && Array.isArray(officesResult.data.offices)) {
         setOffices(officesResult.data.offices)
       }
@@ -163,71 +152,32 @@ export default function NewRequestPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="clientId">Клиент *</Label>
-                <Select value={formData.clientId} onValueChange={(value) => updateField('clientId', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Найдите и выберите клиента" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[200px]">
-                    {clients.length === 0 ? (
-                      <div className="p-2 text-sm text-muted-foreground">
-                        Клиенты не найдены
-                      </div>
-                    ) : (
-                      clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          <div className="flex flex-col items-start w-full">
-                            <div className="font-medium">
-                              {client.firstName} {client.lastName}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              @{client.username} {client.phone && `• ${client.phone}`}
-                            </div>
-                          </div>
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                {formData.clientId && (
-                  <div className="text-xs text-muted-foreground">
-                    Выбран: {clients.find(c => c.id === formData.clientId)?.firstName} {clients.find(c => c.id === formData.clientId)?.lastName}
-                  </div>
-                )}
+                <ClientSearchSelect
+                  value={formData.clientId}
+                  onValueChange={(value) => updateField('clientId', value)}
+                  placeholder="Найдите и выберите клиента"
+                />
               </div>
 
               {user?.role === 'ADMIN' && (
                 <div className="space-y-2">
                   <Label htmlFor="officeId">Офис</Label>
-                  <Select value={formData.officeId} onValueChange={(value) => updateField('officeId', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Выберите офис" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {offices.map((office) => (
-                        <SelectItem key={office.id} value={office.id}>
-                          {office.name} ({office.city})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <OfficeSelect
+                    value={formData.officeId}
+                    onValueChange={(value) => updateField('officeId', value)}
+                    placeholder="Выберите офис"
+                    offices={offices}
+                  />
                 </div>
               )}
 
               <div className="space-y-2">
                 <Label htmlFor="direction">Направление операции *</Label>
-                <Select value={formData.direction} onValueChange={(value) => updateField('direction', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите направление" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CRYPTO_TO_CASH">Крипта → Наличные</SelectItem>
-                    <SelectItem value="CASH_TO_CRYPTO">Наличные → Крипта</SelectItem>
-                    <SelectItem value="CRYPTO_TO_CARD">Крипта → Карта</SelectItem>
-                    <SelectItem value="CARD_TO_CRYPTO">Карта → Крипта</SelectItem>
-                    <SelectItem value="CARD_TO_CASH">Карта → Наличные</SelectItem>
-                    <SelectItem value="CASH_TO_CARD">Наличные → Карта</SelectItem>
-                  </SelectContent>
-                </Select>
+                <DirectionSelectSimple
+                  value={formData.direction}
+                  onValueChange={(value) => updateField('direction', value)}
+                  placeholder="Выберите направление"
+                />
               </div>
             </CardContent>
           </Card>

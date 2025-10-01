@@ -39,7 +39,7 @@ describe('NotificationsDropdown', () => {
       loading: false,
     })
 
-    vi.mocked(require('@/hooks/use-api').useApi).mockImplementation(mockUseApi)
+    vi.mocked(vi.importMock('@/hooks/use-api').useApi).mockImplementation(mockUseApi)
   })
 
   it('should render notification bell icon', () => {
@@ -141,7 +141,7 @@ describe('NotificationsDropdown', () => {
       unreadCount: 1,
     })
 
-    vi.mocked(require('@/hooks/use-api').useApi).mockReturnValue({
+    vi.mocked(vi.importMock('@/hooks/use-api').useApi).mockReturnValue({
       execute: mockMarkAsRead,
       loading: false,
     })
@@ -181,7 +181,7 @@ describe('NotificationsDropdown', () => {
       unreadCount: 1,
     })
 
-    vi.mocked(require('@/hooks/use-api').useApi).mockReturnValue({
+    vi.mocked(vi.importMock('@/hooks/use-api').useApi).mockReturnValue({
       execute: mockMarkAllRead,
       loading: false,
     })
@@ -220,7 +220,7 @@ describe('NotificationsDropdown', () => {
       unreadCount: 1,
     })
 
-    vi.mocked(require('@/hooks/use-api').useApi).mockReturnValue({
+    vi.mocked(vi.importMock('@/hooks/use-api').useApi).mockReturnValue({
       execute: mockDelete,
       loading: false,
     })
@@ -246,7 +246,7 @@ describe('NotificationsDropdown', () => {
 
   it('should navigate to request when notification with requestId is clicked', async () => {
     const mockRouter = { push: vi.fn() }
-    vi.mocked(require('next/navigation').useRouter).mockReturnValue(mockRouter)
+    vi.mocked(vi.importMock('next/navigation').useRouter).mockReturnValue(mockRouter)
 
     mockExecute.mockResolvedValue({
       data: [
@@ -279,7 +279,7 @@ describe('NotificationsDropdown', () => {
   })
 
   it('should not render when user is not authenticated', () => {
-    vi.mocked(require('@/components/auth-provider').useAuth).mockReturnValue({
+    vi.mocked(vi.importMock('@/components/auth-provider').useAuth).mockReturnValue({
       user: null,
     })
 

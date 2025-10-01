@@ -5,7 +5,7 @@
  * Запуск: node generate-keys.js
  */
 
-const crypto = require('crypto')
+import crypto from 'crypto'
 
 console.log('🔐 Генерация безопасных ключей для CryptoCoinChange')
 console.log('=' .repeat(60))

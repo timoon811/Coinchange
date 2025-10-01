@@ -37,14 +37,9 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserRole } from '@prisma/client'
-
-interface Client {
-  id: string
-  username: string
-  firstName: string
-  lastName: string
-  phone: string | null
-}
+import { ClientSearchSelect } from '@/components/ui/client-search-select'
+import { OfficeSelect } from '@/components/ui/office-select'
+import { DirectionSelectSimple } from '@/components/ui/direction-select-simple'
 
 interface Office {
   id: string
@@ -59,10 +54,10 @@ interface CreateRequestModalProps {
 export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
-  const [clients, setClients] = useState<Client[]>([])
   const [offices, setOffices] = useState<Office[]>([])
   const [currencies, setCurrencies] = useState<string[]>([])
   const [step, setStep] = useState(1)
+  const [loadingError, setLoadingError] = useState<string | null>(null)
   
   // Форма данных
   const [formData, setFormData] = useState({
@@ -78,7 +73,6 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
     comment: '',
   })
 
-  const { execute: fetchClients } = useApi<{data: Client[]}>()
   const { execute: fetchOffices } = useApi<{data: {offices: Office[], pagination: any}}>()
   const { execute: fetchCurrencies } = useApi<{data: Array<{code: string, isActive: boolean}>}>()
   const { execute: createRequest, loading: creating } = useApi()
@@ -91,20 +85,30 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
   }, [open])
 
   const loadData = async () => {
-    const [clientsResult, officesResult, currenciesResult] = await Promise.all([
-      fetchClients('/api/clients?limit=100'),
-      fetchOffices('/api/admin/offices?limit=100'),
-      fetchCurrencies('/api/currencies?isActive=true'),
-    ])
+    setLoadingError(null)
+    try {
+      const [officesResult, currenciesResult] = await Promise.all([
+        fetchOffices('/api/admin/offices?limit=100'),
+        fetchCurrencies('/api/currencies?isActive=true'),
+      ])
 
-    if (clientsResult?.data && Array.isArray(clientsResult.data)) {
-      setClients(clientsResult.data)
-    }
-    if (officesResult?.data?.offices && Array.isArray(officesResult.data.offices)) {
-      setOffices(officesResult.data.offices)
-    }
-    if (currenciesResult?.data && Array.isArray(currenciesResult.data)) {
-      setCurrencies(currenciesResult.data.map(c => c.code))
+      console.log('CreateRequestModal: officesResult:', officesResult) // Debug log
+      console.log('CreateRequestModal: currenciesResult:', currenciesResult) // Debug log
+
+      if (officesResult?.offices && Array.isArray(officesResult.offices)) {
+        setOffices(officesResult.offices)
+      } else {
+        setLoadingError('Не удалось загрузить список офисов')
+      }
+      
+      if (currenciesResult && Array.isArray(currenciesResult)) {
+        setCurrencies(currenciesResult.map(c => c.code))
+      } else {
+        setLoadingError('Не удалось загрузить список валют')
+      }
+    } catch (error) {
+      console.error('Failed to load data:', error)
+      setLoadingError('Ошибка загрузки данных. Проверьте авторизацию.')
     }
   }
 
@@ -183,24 +187,24 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  
-  const directionLabels = {
-    'CRYPTO_TO_CASH': 'Крипта → Наличные',
-    'CASH_TO_CRYPTO': 'Наличные → Крипта',
-    'CRYPTO_TO_CARD': 'Крипта → Карта',
-    'CARD_TO_CRYPTO': 'Карта → Крипта',
-    'CARD_TO_CASH': 'Карта → Наличные',
-    'CASH_TO_CARD': 'Наличные → Карта',
+  const getDirectionLabel = (direction: string) => {
+    const labels: Record<string, string> = {
+      'CRYPTO_TO_CASH': 'Крипта → Наличные',
+      'CASH_TO_CRYPTO': 'Наличные → Крипта',
+      'CRYPTO_TO_CARD': 'Крипта → Карта',
+      'CARD_TO_CRYPTO': 'Карта → Крипта',
+      'CARD_TO_CASH': 'Карта → Наличные',
+      'CASH_TO_CARD': 'Наличные → Карта',
+      'CRYPTO_TO_CRYPTO': 'Крипта → Крипта',
+      'CASH_TO_CASH': 'Наличные → Наличные',
+      'CARD_TO_CARD': 'Карта → Карта',
+      'CRYPTO_TO_BANK': 'Крипта → Банк',
+      'BANK_TO_CRYPTO': 'Банк → Крипта',
+      'CRYPTO_TO_PAYMENT': 'Крипта → Платеж',
+    }
+    return labels[direction] || direction
   }
 
-  const getDirectionIcon = (direction: string) => {
-    if (direction.includes('CRYPTO')) return <Wallet className="h-4 w-4" />
-    if (direction.includes('CARD')) return <CreditCard className="h-4 w-4" />
-    if (direction.includes('CASH')) return <Banknote className="h-4 w-4" />
-    return <ArrowRightLeft className="h-4 w-4" />
-  }
-
-  const selectedClient = clients.find(c => c.id === formData.clientId)
   const selectedOffice = offices.find(o => o.id === formData.officeId)
 
   return (
@@ -216,37 +220,37 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
           Создать заявку
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto w-[95vw] sm:w-full">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-xl font-semibold">Создание новой заявки</DialogTitle>
-              <DialogDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1">
+              <DialogTitle className="text-lg sm:text-xl font-semibold">Создание новой заявки</DialogTitle>
+              <DialogDescription className="text-sm">
                 Заполните информацию для создания заявки на обмен
               </DialogDescription>
             </div>
-            <div className="flex items-center gap-3 text-sm">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 border-2 ${
+            <div className="flex items-center justify-center gap-2 sm:gap-3 text-sm">
+              <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 border-2 ${
                 step >= 1 
                   ? 'bg-primary text-primary-foreground border-primary' 
                   : 'bg-background border-border text-muted-foreground'
               }`}>
                 1
               </div>
-              <div className={`w-12 h-0.5 transition-all duration-200 ${
+              <div className={`w-8 sm:w-12 h-0.5 transition-all duration-200 ${
                 step >= 2 ? 'bg-primary' : 'bg-border'
               }`} />
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 border-2 ${
+              <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 border-2 ${
                 step >= 2 
                   ? 'bg-primary text-primary-foreground border-primary' 
                   : 'bg-background border-border text-muted-foreground'
               }`}>
                 2
               </div>
-              <div className={`w-12 h-0.5 transition-all duration-200 ${
+              <div className={`w-8 sm:w-12 h-0.5 transition-all duration-200 ${
                 step >= 3 ? 'bg-primary' : 'bg-border'
               }`} />
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 border-2 ${
+              <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 border-2 ${
                 step >= 3 
                   ? 'bg-primary text-primary-foreground border-primary' 
                   : 'bg-background border-border text-muted-foreground'
@@ -257,6 +261,18 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
           </div>
         </DialogHeader>
 
+        {loadingError && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <div className="text-sm text-red-700">{loadingError}</div>
+            </div>
+            <div className="text-xs text-red-600 mt-1">
+              Убедитесь, что вы авторизованы в системе
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {step === 1 && (
             <div className="space-y-6 animate-in slide-in-from-right-5 duration-300">
@@ -265,94 +281,49 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
                   <CardTitle className="text-lg">Основная информация</CardTitle>
                   <CardDescription>Выберите клиента и тип операции</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="clientId">
+                    <Label htmlFor="clientId" className="text-sm font-medium">
                       Клиент <span className="text-red-500">*</span>
                     </Label>
-                    <Select value={formData.clientId} onValueChange={(value) => updateField('clientId', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Найдите и выберите клиента" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[200px]">
-                        {clients.length === 0 ? (
-                          <div className="p-2 text-sm text-muted-foreground">
-                            Клиенты не найдены
-                          </div>
-                        ) : (
-                          clients.map((client) => (
-                            <SelectItem key={client.id} value={client.id} className="flex flex-col items-start">
-                              <div className="flex items-center gap-2 w-full">
-                                <div className="flex-1">
-                                  <div className="font-medium">
-                                    {client.firstName} {client.lastName}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    @{client.username} {client.phone && `• ${client.phone}`}
-                                  </div>
-                                </div>
-                                <Badge variant="outline" className="text-xs">
-                                  ID: {client.id.slice(-6)}
-                                </Badge>
-                              </div>
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {formData.clientId && (
-                      <div className="text-xs text-muted-foreground">
-                        Выбран: {clients.find(c => c.id === formData.clientId)?.firstName} {clients.find(c => c.id === formData.clientId)?.lastName}
-                      </div>
-                    )}
+                    <ClientSearchSelect
+                      value={formData.clientId}
+                      onValueChange={(value) => updateField('clientId', value)}
+                      placeholder="Найдите и выберите клиента"
+                    />
                   </div>
 
                   {user?.role === UserRole.ADMIN && (
                     <div className="space-y-2">
-                      <Label htmlFor="officeId">Офис</Label>
-                      <Select value={formData.officeId} onValueChange={(value) => updateField('officeId', value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Выберите офис" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {offices.map((office) => (
-                            <SelectItem key={office.id} value={office.id}>
-                              {office.name} ({office.city})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="officeId" className="text-sm font-medium">Офис</Label>
+                      <OfficeSelect
+                        value={formData.officeId}
+                        onValueChange={(value) => updateField('officeId', value)}
+                        placeholder="Выберите офис"
+                        offices={offices}
+                      />
                     </div>
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="direction">
+                    <Label htmlFor="direction" className="text-sm font-medium">
                       Направление операции <span className="text-red-500">*</span>
                     </Label>
-                    <Select value={formData.direction} onValueChange={(value) => updateField('direction', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Выберите направление обмена" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(directionLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            <div className="flex items-center gap-2">
-                              {getDirectionIcon(value)}
-                              {label}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <DirectionSelectSimple
+                      value={formData.direction}
+                      onValueChange={(value) => updateField('direction', value)}
+                      placeholder="Выберите направление обмена"
+                    />
                   </div>
                 </CardContent>
               </Card>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-4">
                 <Button 
                   type="button" 
                   onClick={() => setStep(2)}
                   disabled={!formData.clientId || !formData.direction}
+                  className="w-full sm:w-auto"
                 >
                   Далее
                 </Button>
@@ -367,9 +338,9 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
                   <CardTitle className="text-lg">Финансовая информация</CardTitle>
                   <CardDescription>Укажите валюты и сумму операции</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="fromCurrency">
+                    <Label htmlFor="fromCurrency" className="text-sm font-medium">
                       Валюта отдаем <span className="text-red-500">*</span>
                     </Label>
                     <Select value={formData.fromCurrency} onValueChange={(value) => updateField('fromCurrency', value)}>
@@ -387,7 +358,7 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="toCurrency">Валюта получаем</Label>
+                    <Label htmlFor="toCurrency" className="text-sm font-medium">Валюта получаем</Label>
                     <Select value={formData.toCurrency} onValueChange={(value) => updateField('toCurrency', value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Выберите валюту" />
@@ -403,7 +374,7 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="expectedAmountFrom">
+                    <Label htmlFor="expectedAmountFrom" className="text-sm font-medium">
                       Сумма <span className="text-red-500">*</span>
                     </Label>
                     <Input
@@ -418,14 +389,15 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
                 </CardContent>
               </Card>
 
-              <div className="flex justify-between">
-                <Button type="button" variant="outline" onClick={() => setStep(1)}>
+              <div className="flex flex-col sm:flex-row gap-3 sm:justify-between pt-4">
+                <Button type="button" variant="outline" onClick={() => setStep(1)} className="w-full sm:w-auto">
                   Назад
                 </Button>
                 <Button 
                   type="button" 
                   onClick={() => setStep(3)}
                   disabled={!formData.fromCurrency || !formData.expectedAmountFrom}
+                  className="w-full sm:w-auto"
                 >
                   Далее
                 </Button>
@@ -447,12 +419,12 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
                         : 'Данные банковской карты для получения'}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-6">
                 
                 {/* Адрес кошелька для получения криптовалюты */}
                 {(formData.direction === 'CASH_TO_CRYPTO' || formData.direction === 'CARD_TO_CRYPTO') && (
-                  <div className="space-y-2 mb-4">
-                    <Label htmlFor="walletAddress">
+                  <div className="space-y-2">
+                    <Label htmlFor="walletAddress" className="text-sm font-medium">
                       Адрес кошелька получателя <span className="text-red-500">*</span>
                     </Label>
                     <Input
@@ -467,7 +439,7 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
                 {(formData.direction === 'CRYPTO_TO_CARD' || formData.direction === 'CASH_TO_CARD') && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="cardNumber">
+                      <Label htmlFor="cardNumber" className="text-sm font-medium">
                         Номер карты <span className="text-red-500">*</span>
                       </Label>
                       <Input
@@ -479,7 +451,7 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="bankName">
+                      <Label htmlFor="bankName" className="text-sm font-medium">
                         Банк <span className="text-red-500">*</span>
                       </Label>
                       <Input
@@ -502,7 +474,7 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <Label htmlFor="comment">Комментарий</Label>
+                    <Label htmlFor="comment" className="text-sm font-medium">Комментарий</Label>
                     <Textarea
                       id="comment"
                       placeholder="Дополнительная информация о заявке"
@@ -521,28 +493,21 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
                   <CardDescription>Проверьте данные перед созданием</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Клиент:</span>
-                      <div className="font-medium">
-                        {selectedClient?.firstName} {selectedClient?.lastName} (@{selectedClient?.username})
-                      </div>
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     {selectedOffice && (
-                      <div>
-                        <span className="text-muted-foreground">Офис:</span>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground text-xs">Офис:</span>
                         <div className="font-medium">{selectedOffice.name} ({selectedOffice.city})</div>
                       </div>
                     )}
-                    <div>
-                      <span className="text-muted-foreground">Направление:</span>
-                      <div className="font-medium flex items-center gap-2">
-                        {getDirectionIcon(formData.direction)}
-                        {directionLabels[formData.direction as keyof typeof directionLabels]}
+                    <div className="space-y-1">
+                      <span className="text-muted-foreground text-xs">Направление:</span>
+                      <div className="font-medium">
+                        {getDirectionLabel(formData.direction)}
                       </div>
                     </div>
-                    <div>
-                      <span className="text-muted-foreground">Обмен:</span>
+                    <div className="space-y-1 sm:col-span-2">
+                      <span className="text-muted-foreground text-xs">Обмен:</span>
                       <div className="font-medium">
                         {formData.expectedAmountFrom} {formData.fromCurrency}
                         {formData.toCurrency && ` → ${formData.toCurrency}`}
@@ -552,13 +517,14 @@ export function CreateRequestModal({ onRequestCreated }: CreateRequestModalProps
                 </CardContent>
               </Card>
 
-              <div className="flex justify-between">
-                <Button type="button" variant="outline" onClick={() => setStep(2)}>
+              <div className="flex flex-col sm:flex-row gap-3 sm:justify-between pt-4">
+                <Button type="button" variant="outline" onClick={() => setStep(2)} className="w-full sm:w-auto">
                   Назад
                 </Button>
                 <Button 
                   type="submit" 
                   disabled={creating}
+                  className="w-full sm:w-auto"
                 >
                   {creating ? (
                     <>

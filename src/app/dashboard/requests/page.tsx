@@ -525,19 +525,19 @@ export default function RequestsPage() {
 
               {/* Десктопная версия - полная таблица */}
               <div className="hidden lg:block overflow-x-auto">
-                <Table className="min-w-[1100px]">
+                <Table className="min-w-[900px]">
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
-                  <TableHead className="w-[80px]">ID</TableHead>
-                  <TableHead className="w-[180px]">Клиент</TableHead>
-                  <TableHead className="w-[150px]">Направление</TableHead>
-                  <TableHead className="w-[130px]">Сумма</TableHead>
-                  <TableHead className="w-[120px]">Офис</TableHead>
-                  <TableHead className="w-[120px]">Кассир</TableHead>
-                  <TableHead className="w-[110px]">Статус</TableHead>
-                  <TableHead className="w-[70px]">SLA</TableHead>
-                  <TableHead className="w-[90px]">Дата</TableHead>
-                  <TableHead className="w-[60px] text-right">Действия</TableHead>
+                  <TableHead className="w-[60px]">ID</TableHead>
+                  <TableHead className="w-[140px]">Клиент</TableHead>
+                  <TableHead className="w-[120px]">Направление</TableHead>
+                  <TableHead className="w-[100px]">Сумма</TableHead>
+                  <TableHead className="w-[100px]">Офис</TableHead>
+                  <TableHead className="w-[100px]">Кассир</TableHead>
+                  <TableHead className="w-[90px]">Статус</TableHead>
+                  <TableHead className="w-[60px]">SLA</TableHead>
+                  <TableHead className="w-[70px]">Дата</TableHead>
+                  <TableHead className="w-[50px] text-right">Действия</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -546,13 +546,13 @@ export default function RequestsPage() {
                   const StatusIcon = statusInfo.icon
 
                   return (
-                    <TableRow key={request.id} className="h-16 hover:bg-muted/50 transition-colors">
+                    <TableRow key={request.id} className="h-12 hover:bg-muted/50 transition-colors">
                       {/* ID с tooltip */}
-                      <TableCell className="font-mono text-sm p-3">
+                      <TableCell className="font-mono text-xs p-2">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="cursor-pointer hover:text-primary transition-colors">
-                              #{request.requestId.replace('tg-', '').slice(-8)}
+                              #{request.requestId.replace('tg-', '').slice(-6)}
                             </div>
                           </TooltipTrigger>
                           <TooltipContent side="top">
@@ -562,15 +562,15 @@ export default function RequestsPage() {
                       </TableCell>
 
                       {/* Клиент с tooltip */}
-                      <TableCell className="p-3">
+                      <TableCell className="p-2">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="cursor-pointer hover:text-primary transition-colors">
-                              <div className="font-medium text-sm truncate max-w-[160px]">
+                              <div className="font-medium text-xs truncate max-w-[120px]">
                                 {request.client.firstName} {request.client.lastName}
                               </div>
                               {request.client.username && (
-                                <div className="text-xs text-muted-foreground truncate max-w-[160px]">
+                                <div className="text-xs text-muted-foreground truncate max-w-[120px]">
                                   @{request.client.username}
                                 </div>
                               )}
@@ -591,14 +591,14 @@ export default function RequestsPage() {
                       </TableCell>
 
                       {/* Направление с tooltip */}
-                      <TableCell className="p-3">
+                      <TableCell className="p-2">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="cursor-pointer">
-                              <div className="font-medium text-sm truncate max-w-[130px]">
+                              <div className="font-medium text-xs truncate max-w-[100px]">
                                 {request.finance?.fromCurrency} → {request.finance?.toCurrency}
                               </div>
-                              <div className="text-xs text-muted-foreground truncate max-w-[130px]">
+                              <div className="text-xs text-muted-foreground truncate max-w-[100px]">
                                 {request.finance?.fromNetwork || 'Не указано'}
                               </div>
                             </div>
@@ -614,16 +614,16 @@ export default function RequestsPage() {
                       </TableCell>
 
                       {/* Сумма с tooltip */}
-                      <TableCell className="p-3">
+                      <TableCell className="p-2">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="cursor-pointer">
-                              <div className="font-medium text-sm truncate max-w-[110px]">
+                              <div className="font-medium text-xs truncate max-w-[80px]">
                                 {request.finance && new Intl.NumberFormat('ru-RU', {
-                                  maximumFractionDigits: 2,
+                                  maximumFractionDigits: 0,
                                 }).format(request.finance.expectedAmountFrom)}
                               </div>
-                              <div className="text-xs text-muted-foreground truncate max-w-[110px]">
+                              <div className="text-xs text-muted-foreground truncate max-w-[80px]">
                                 {request.finance?.fromCurrency}
                               </div>
                             </div>
@@ -653,15 +653,15 @@ export default function RequestsPage() {
                       </TableCell>
 
                       {/* Офис с tooltip */}
-                      <TableCell className="p-3">
+                      <TableCell className="p-2">
                         {request.office ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className="cursor-pointer">
-                                <div className="font-medium text-sm truncate max-w-[100px]">
+                                <div className="font-medium text-xs truncate max-w-[80px]">
                                   {request.office.name}
                                 </div>
-                                <div className="text-xs text-muted-foreground truncate max-w-[100px]">
+                                <div className="text-xs text-muted-foreground truncate max-w-[80px]">
                                   {request.office.city}
                                 </div>
                               </div>
@@ -675,20 +675,20 @@ export default function RequestsPage() {
                             </TooltipContent>
                           </Tooltip>
                         ) : (
-                          <span className="text-muted-foreground text-sm">Не назначен</span>
+                          <span className="text-muted-foreground text-xs">Не назначен</span>
                         )}
                       </TableCell>
 
                       {/* Кассир с tooltip */}
-                      <TableCell className="p-3">
+                      <TableCell className="p-2">
                         {request.assignedUser ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className="cursor-pointer">
-                                <div className="font-medium text-sm truncate max-w-[100px]">
+                                <div className="font-medium text-xs truncate max-w-[80px]">
                                   {request.assignedUser.firstName} {request.assignedUser.lastName}
                                 </div>
-                                <div className="text-xs text-muted-foreground truncate max-w-[100px]">
+                                <div className="text-xs text-muted-foreground truncate max-w-[80px]">
                                   @{request.assignedUser.username}
                                 </div>
                               </div>
@@ -704,20 +704,20 @@ export default function RequestsPage() {
                             </TooltipContent>
                           </Tooltip>
                         ) : (
-                          <span className="text-muted-foreground text-sm">Не назначен</span>
+                          <span className="text-muted-foreground text-xs">Не назначен</span>
                         )}
                       </TableCell>
 
                       {/* Статус с tooltip */}
-                      <TableCell className="p-3">
+                      <TableCell className="p-2">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="cursor-pointer">
                               <Badge
                                 variant="secondary"
-                                className={`${statusInfo.color} text-white text-sm px-3 py-1 max-w-[95px]`}
+                                className={`${statusInfo.color} text-white text-xs px-2 py-1 max-w-[75px]`}
                               >
-                                <StatusIcon className="mr-2 h-3 w-3 flex-shrink-0" />
+                                <StatusIcon className="mr-1 h-2 w-2 flex-shrink-0" />
                                 <span className="truncate">{statusInfo.label}</span>
                               </Badge>
                             </div>
@@ -739,12 +739,12 @@ export default function RequestsPage() {
                       </TableCell>
 
                       {/* SLA с tooltip */}
-                      <TableCell className="p-3">
+                      <TableCell className="p-2">
                         {request.isOverdue ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Badge variant="destructive" className="text-xs px-2 py-1 cursor-pointer">
-                                <AlertTriangle className="h-3 w-3 mr-1" />
+                              <Badge variant="destructive" className="text-xs px-1 py-0.5 cursor-pointer">
+                                <AlertTriangle className="h-2 w-2 mr-1" />
                                 Просрочена
                               </Badge>
                             </TooltipTrigger>
@@ -762,7 +762,7 @@ export default function RequestsPage() {
                         ) : request.timeToSLA ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className="text-sm font-medium cursor-pointer">
+                              <span className="text-xs font-medium cursor-pointer">
                                 {formatTimeToSLA(request.timeToSLA)}
                               </span>
                             </TooltipTrigger>
@@ -778,16 +778,16 @@ export default function RequestsPage() {
                             </TooltipContent>
                           </Tooltip>
                         ) : (
-                          <span className="text-muted-foreground text-sm">Не установлен</span>
+                          <span className="text-muted-foreground text-xs">Не установлен</span>
                         )}
                       </TableCell>
 
                       {/* Дата с tooltip */}
-                      <TableCell className="p-3">
+                      <TableCell className="p-2">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="cursor-pointer">
-                              <div className="font-medium text-sm">
+                              <div className="font-medium text-xs">
                                 {format(new Date(request.createdAt), 'dd.MM.yy', { locale: ru })}
                               </div>
                               <div className="text-xs text-muted-foreground">
@@ -811,11 +811,11 @@ export default function RequestsPage() {
                       </TableCell>
 
                       {/* Действия */}
-                      <TableCell className="text-right p-3">
+                      <TableCell className="text-right p-2">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted">
-                              <MoreHorizontal className="h-4 w-4" />
+                            <Button variant="ghost" className="h-6 w-6 p-0 hover:bg-muted">
+                              <MoreHorizontal className="h-3 w-3" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">

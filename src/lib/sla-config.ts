@@ -269,3 +269,5 @@ export function getSLACriticality(
   return 'good' // Больше часа
 }
 
+
+

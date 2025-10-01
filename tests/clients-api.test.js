@@ -181,9 +181,7 @@ describe('Client API Tests', () => {
 
     test('should validate required fields', async () => {
       const invalidClientData = {
-        firstName: 'John',
-        lastName: 'Doe'
-        // telegramUserId отсутствует
+        // Все поля отсутствуют - должно быть хотя бы одно из: firstName, lastName, username
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -194,8 +192,8 @@ describe('Client API Tests', () => {
           error: 'Неверные данные клиента',
           details: [
             {
-              field: 'telegramUserId',
-              message: 'Telegram ID обязателен'
+              field: 'general',
+              message: 'Укажите хотя бы имя, фамилию или username'
             }
           ]
         })
@@ -733,4 +731,6 @@ describe('Client API Tests', () => {
     });
   });
 });
+
+
 

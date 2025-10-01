@@ -24,6 +24,10 @@
 .DS_Store
 *.pem
 
+# project artifacts
+/logs/*.log
+/cookies*.txt
+
 # debug
 npm-debug.log*
 yarn-debug.log*

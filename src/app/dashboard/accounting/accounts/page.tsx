@@ -561,7 +561,7 @@ export default function AccountsPage() {
               {/* Таблица для средних и больших экранов */}
               <div className="hidden md:block">
                 <div className="overflow-x-auto">
-                  <Table className="min-w-[800px]">
+                  <Table className="min-w-[700px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[25%] max-w-[200px]">Название</TableHead>

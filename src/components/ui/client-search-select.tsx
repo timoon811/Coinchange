@@ -49,6 +49,7 @@ export function ClientSearchSelect({
   const [clients, setClients] = useState<Client[]>([])
   const [allClients, setAllClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const { execute: fetchClients } = useApi<{data: Client[]}>()
 
@@ -61,14 +62,19 @@ export function ClientSearchSelect({
 
   const loadAllClients = async () => {
     setLoading(true)
+    setError(null)
     try {
       const result = await fetchClients('/api/clients?limit=100')
-      if (result?.data && Array.isArray(result.data)) {
-        setAllClients(result.data)
-        setClients(result.data.slice(0, 20)) // Показываем первые 20
+      console.log('ClientSearchSelect: API result:', result) // Debug log
+      if (result && Array.isArray(result)) {
+        setAllClients(result)
+        setClients(result.slice(0, 20)) // Показываем первые 20
+      } else {
+        setError('Не удалось загрузить список клиентов')
       }
     } catch (error) {
       console.error('Failed to load clients:', error)
+      setError('Ошибка загрузки клиентов. Проверьте авторизацию.')
     } finally {
       setLoading(false)
     }
@@ -77,17 +83,15 @@ export function ClientSearchSelect({
   // Фильтрация клиентов с debounce
   const filteredClients = useMemo(() => {
     if (!searchQuery) {
-      return allClients.slice(0, 20)
+      return allClients.slice(0, 2) // Показываем только 2 клиента без поиска
     }
 
     const query = searchQuery.toLowerCase()
     return allClients.filter(client => 
       client.firstName?.toLowerCase().includes(query) ||
       client.lastName?.toLowerCase().includes(query) ||
-      client.username?.toLowerCase().includes(query) ||
-      client.phone?.includes(query) ||
-      client.id.toLowerCase().includes(query)
-    ).slice(0, 10) // Ограничиваем результаты поиска
+      client.username?.toLowerCase().includes(query)
+    ).slice(0, 5) // Ограничиваем результаты поиска до 5
   }, [allClients, searchQuery])
 
   const selectedClient = allClients.find(client => client.id === value)
@@ -110,50 +114,57 @@ export function ClientSearchSelect({
             disabled={disabled}
           >
             {selectedClient ? (
-              <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="flex items-center gap-2 min-w-0 flex-1 justify-start">
                 <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <div className="flex flex-col items-start min-w-0 flex-1">
-                  <div className="font-medium truncate">
+                <div className="flex flex-col items-start min-w-0 flex-1 overflow-hidden">
+                  <div className="font-medium truncate w-full text-left">
                     {selectedClient.firstName} {selectedClient.lastName}
                   </div>
-                  <div className="text-xs text-muted-foreground truncate">
+                  <div className="text-xs text-muted-foreground truncate w-full text-left">
                     @{selectedClient.username}
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Search className="h-4 w-4" />
-                {placeholder}
+              <div className="flex items-center gap-2 text-muted-foreground min-w-0 flex-1 justify-start">
+                <Search className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate text-left">{placeholder}</span>
               </div>
             )}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 max-h-[200px]" align="start">
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="Поиск по имени, username, телефону..."
+              placeholder="Поиск по имени или username..."
               value={searchQuery}
               onValueChange={setSearchQuery}
               className="h-9"
             />
-            <CommandList>
+            <CommandList className="max-h-[150px] overflow-y-auto">
               {loading ? (
                 <div className="p-4 text-center">
                   <div className="text-sm text-muted-foreground">Загрузка клиентов...</div>
+                </div>
+              ) : error ? (
+                <div className="p-4 text-center">
+                  <div className="text-sm text-red-500 mb-2">{error}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Убедитесь, что вы авторизованы в системе
+                  </div>
                 </div>
               ) : (
                 <>
                   <CommandEmpty>
                     {searchQuery ? (
-                      <div className="p-4 text-center">
+                      <div className="p-3 text-center">
                         <div className="text-sm text-muted-foreground">
                           Клиенты не найдены по запросу "{searchQuery}"
                         </div>
                       </div>
                     ) : (
-                      <div className="p-4 text-center">
+                      <div className="p-3 text-center">
                         <div className="text-sm text-muted-foreground">Начните вводить для поиска</div>
                       </div>
                     )}
@@ -164,32 +175,21 @@ export function ClientSearchSelect({
                         key={client.id}
                         value={client.id}
                         onSelect={() => handleSelect(client.id)}
-                        className="flex items-center gap-3 p-3"
+                        className="flex items-start gap-2 p-2"
                       >
                         <Check
                           className={cn(
-                            "h-4 w-4",
+                            "h-4 w-4 mt-0.5",
                             value === client.id ? "opacity-100" : "opacity-0"
                           )}
                         />
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium">
-                              {client.firstName} {client.lastName}
-                            </div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-2">
-                              <span>@{client.username}</span>
-                              {client.phone && (
-                                <>
-                                  <span>•</span>
-                                  <span>{client.phone}</span>
-                                </>
-                              )}
-                            </div>
+                        <div className="flex flex-col gap-1 min-w-0 flex-1">
+                          <div className="font-medium text-left">
+                            {client.firstName} {client.lastName}
                           </div>
-                          <Badge variant="outline" className="text-xs">
-                            ID: {client.id.slice(-6)}
-                          </Badge>
+                          <div className="text-sm text-muted-foreground text-left">
+                            @{client.username}
+                          </div>
                         </div>
                       </CommandItem>
                     ))}
@@ -200,13 +200,6 @@ export function ClientSearchSelect({
           </Command>
         </PopoverContent>
       </Popover>
-      
-      {/* Показываем информацию о выбранном клиенте */}
-      {selectedClient && (
-        <div className="mt-2 text-xs text-muted-foreground">
-          Выбран: {selectedClient.firstName} {selectedClient.lastName} (@{selectedClient.username})
-        </div>
-      )}
     </div>
   )
 }

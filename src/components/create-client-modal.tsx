@@ -63,11 +63,6 @@ export function CreateClientModal({ open, onOpenChange, onClientCreated }: Creat
     e.preventDefault()
 
     // Валидация
-    if (!formData.telegramUserId) {
-      toast.error('Telegram ID обязателен')
-      return
-    }
-
     if (!formData.firstName && !formData.lastName && !formData.username) {
       toast.error('Укажите хотя бы имя, фамилию или username')
       return
@@ -78,7 +73,7 @@ export function CreateClientModal({ open, onOpenChange, onClientCreated }: Creat
       lastName: formData.lastName || null,
       username: formData.username || null,
       phone: formData.phone || null,
-      telegramUserId: formData.telegramUserId,
+      telegramUserId: formData.telegramUserId || null,
       tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
       notes: formData.notes || null,
       isBlocked: formData.isBlocked,
@@ -160,9 +155,7 @@ export function CreateClientModal({ open, onOpenChange, onClientCreated }: Creat
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="telegramUserId">
-                    Telegram ID <span className="text-red-500">*</span>
-                  </Label>
+                  <Label htmlFor="telegramUserId">Telegram ID</Label>
                   <Input
                     id="telegramUserId"
                     value={formData.telegramUserId}
