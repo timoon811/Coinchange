@@ -135,7 +135,7 @@ model Office {
 // Клиенты из Telegram
 model Client {
   id                String   @id @default(cuid())
-  telegramUserId    String   @unique
+  telegramUserId    String?  @unique
   username          String?
   firstName         String?
   lastName          String?
